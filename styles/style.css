@@ -1,0 +1,183 @@
+.right-align {
+  float: right;
+}
+.left-align {
+  float: left;
+}
+
+.ai-message {
+  color: rgb(140, 140, 140);
+  padding: 1em;
+	text-align: left;
+  line-height: 1.5em;
+  z-index: 999;
+  position:relative;
+}
+
+.user-message {
+  color: rgb(0, 0, 0);
+  padding: 1em;
+	text-align: left;
+  line-height: 1.5em;
+}
+
+.chat-container {
+  width: 90%;
+  margin: 0 auto;
+  border: 1px solid #ccc;
+  padding: 10px;
+  position: relative;
+}
+
+/* Chat messages */
+.chat-messages {
+  height: 600px;
+  overflow: auto;
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin-bottom: 10px;
+  justify-content: flex-start; /* Align messages to the left side by default */
+  display: flex;
+  flex-direction: column;
+  z-index: 990;
+}
+
+/* Chat input box */
+.chat-input {
+  width: 100%;
+  padding: 5px;
+}
+
+/* Submit button */
+.chat-submit {
+  width: 100%;
+  padding: 5px;
+  background-color: #3b05fff9;
+  color: white;
+  cursor: pointer;
+}  
+
+/* Styles for screens smaller than 400px */
+/* Styles for small screens */
+@media screen and (max-width: 600px) {
+  .chat-container,
+  .chat-messages {
+    width: 90%;
+  }
+}
+
+/* Styles for screens shorter than 600px */
+@media screen and (max-height: 300px) {
+  .chat-container,
+  .chat-messages {
+    height: 90%; /* Adjust the max-height as per your requirements */
+  }
+}
+
+.talk-bubble {
+	margin: 40px;
+  display: inline-block;
+  position: relative;
+  z-index: 995;
+  max-width: 80%;
+	height: auto;
+	background-color: rgb(198, 255, 207);
+}
+.border{
+  border: 8px solid #666;
+}
+.round{
+  border-radius: 30px;
+	-webkit-border-radius: 30px;
+	-moz-border-radius: 30px;
+
+}
+
+.talktext{
+  padding: 1em;
+	text-align: left;
+  line-height: 1.5em;
+}
+.talktext p{
+  /* remove webkit p margins */
+  -webkit-margin-before: 0em;
+  -webkit-margin-after: 0em;
+}
+
+/* Right triangle, right side slightly down*/
+.tri-right.border.right-in:before {
+	content: ' ';
+	position: absolute;
+	width: 0;
+	height: 0;
+  left: auto;
+	right: -40px;
+  top: 30px;
+	bottom: auto;
+	border: 20px solid;
+	border-color: #666 transparent transparent #666;
+}
+.tri-right.right-in:after{
+	content: ' ';
+	position: absolute;
+	width: 0;
+	height: 0;
+  left: auto;
+	right: -20px;
+  top: 18px;
+	bottom: auto;
+	border: 12px solid;
+	border-color: rgb(198, 255, 207) transparent transparent rgb(198, 255, 207);
+}
+
+/* Right triangle, left side slightly down */
+.tri-right.border.left-in:before {
+	content: ' ';
+	position: absolute;
+	width: 0;
+	height: 0;
+  left: -40px;
+	right: auto;
+  top: 30px;
+	bottom: auto;
+	border: 20px solid;
+	border-color: #666 #666 transparent transparent;
+}
+.tri-right.left-in:after{
+	content: ' ';
+	position: absolute;
+	width: 0;
+	height: 0;
+  left: -24px;
+	right: auto;
+  top: 30px;
+	bottom: auto;
+	border: 12px solid;
+	border-color: rgb(198, 255, 207) rgb(198, 255, 207) transparent transparent;
+}
+
+
+/* Loading spinner */
+.loading-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, 0.3);
+  border-top: 2px solid #333;
+  animation: spin 1s linear infinite;
+  display: none; /* Initially hide the loading circle */
+  position: fixed; /* Set the position to fixed */
+  top: 50%; /* Vertically center the loading circle */
+  left: 50%; /* Horizontally center the loading circle */
+  transform: translate(-50%, -50%); /* Adjust to center it perfectly */
+  z-index: 1000; /* Ensure the loading circle appears above other elements */
+  background-color: rgba(255, 255, 255, 0.7); /* Add a translucent background */
+  padding: 10px; /* Add some padding to make it more visible */
+}
+
+/* Rest of your existing CSS styles */
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
