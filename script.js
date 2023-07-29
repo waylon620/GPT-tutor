@@ -1,6 +1,7 @@
 const msgerForm = get(".msger-inputarea");
 const msgerInput = get(".msger-input");
 const msgerChat = get(".msger-chat");
+const problem_type = document.getElementById("problem_type");
 
 const history = []; //record the history
 
@@ -20,19 +21,21 @@ const BOT_NAME = "BOT";
 const PERSON_NAME = "User";
 
 msgerForm.addEventListener("submit", event => {
-  event.preventDefault();
+    event.preventDefault();
+    
+    const msgText = msgerInput.value;
+    if (!msgText) return;
 
-  const msgText = msgerInput.value;
-  if (!msgText) return;
-
-  appendMessage(PERSON_NAME, PERSON_IMG, "right", msgText);
-  const response = GPT_api(msgText);
-//   botResponse(response);
-  msgerInput.value = "";
+    appendMessage(PERSON_NAME, PERSON_IMG, "right", msgText);
+    const response = GPT_api(msgText);
+    //   botResponse(response);
+    msgerInput.value = "";
 
 });
 
 async function GPT_api(message){
+    const type = problem_type.value;
+    console.log(type);
     var responseMessage = "";
     console.log(message);
     const requestBody = {
@@ -44,7 +47,7 @@ async function GPT_api(message){
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer '
+          Authorization: 'Bearer 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'
         },
         body: JSON.stringify(requestBody)
     };
@@ -125,4 +128,19 @@ function formatDate(date) {
 
 function random(min, max) {
   return Math.floor(Math.random() * (max - min) + min);
+}
+
+window.onload = onPageLoad;
+function onPageLoad() {
+    console.log("pre prompt");
+    GPT_api("For the following instructions,please do it step by step: " + 
+            "As the python coding tutor,you should heip students in learning python with patience." +
+            "First ask user what is the coding problem the user faced to." +
+            "Secondly,ask user about the question of the coding problem." +
+            "There will be 3 types of question:" +
+            "1.How to solve the coding error?" +
+            "2.How to solve the coding problem?" +
+            "3.How to get AC(accepted)" +
+            "After reading the instrctions,say whether or not you clearly understand the instructions."
+            );
 }
