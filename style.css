@@ -17,6 +17,7 @@
     padding: 0;
     box-sizing: inherit;
   }
+
   
   body {
     display: flex;
@@ -27,6 +28,10 @@
     font-family: Helvetica, sans-serif;
   }
   
+  pre {
+    white-space: pre-wrap; /* IE 5.5-7 */
+    overflow-wrap: break-word;
+  }
   .msger {
     display: flex;
     flex-flow: column wrap;
@@ -100,6 +105,10 @@
   }
   .msg-info-time {
     font-size: 0.85em;
+  }
+  .msg-text{
+    max-width: 400px; /* Set the maximum width of the chat bubble */
+    word-wrap: break-word;
   }
   
   .left-msg .msg-bubble {

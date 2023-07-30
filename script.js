@@ -47,7 +47,7 @@ async function GPT_api(message){
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer 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'
+          Authorization: 'Bearer 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'
         },
         body: JSON.stringify(requestBody)
     };
@@ -89,7 +89,7 @@ function appendMessage(name, img, side, text) {
           <div class="msg-info-time">${formatDate(new Date())}</div>
         </div>
 
-        <div class="msg-text">${text}</div>
+        <div class="msg-text"><pre>${text}</pre></div>
       </div>
     </div>
   `;
