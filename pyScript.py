@@ -31,9 +31,10 @@ def checkPrompt(msg):
                 except:
                     None
                 else:
-                    # js.writeConsole("else__")
+                    js.writeConsole("else__")
                     isPython += 1
                 finally:
+                    js.writeConsole(y + "y")
                     if(isPython > 0):
                         None
                         break
@@ -42,6 +43,7 @@ def checkPrompt(msg):
                 isPython += 1
 
             if(isPython>0):
+                js.writeConsole(y + "x")
                 None
                 break
             
