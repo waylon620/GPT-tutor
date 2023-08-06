@@ -4,7 +4,6 @@
 <head>
     <link href="style.css" rel="stylesheet" type="text/css"/>
     <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
-    <!-- <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" /> -->
     <title>Chatroom</title>
 </head>
 <body>
@@ -13,12 +12,14 @@
           <div class="msger-header-title">
             <i class="fas fa-comment-alt"></i> SimpleChat  
             <select id="problem_type">
-                <option value="">select problem type</option>
+                <option value="default">select problem type</option>
                 <option value="type1">Coding error</option>
                 <option value="type2">Problem solving tips</option>
                 <option value="type3">How to get AC</option>
             </select>
           </div>
+          <button id="downloadBtn" class="downloadbtn">Download Chat History</button>
+          <button id="clearBtn" class="clearbtn">Clear Chat</button>
           <div class="msger-header-options">
             <span><i class="fas fa-cog"></i></span>
           </div>
@@ -67,14 +68,7 @@
           <button type="submit" class="msger-send-btn">Send</button>
         </form>
       </section>
-      
-    <script defer src="script.js"></script>
-    <script src="https://pyscript.net/latest/pyscript.js"></script>
-    <py-script defer src="pyScript.py"></py-script>
-    
-
-    <!-- <div style="display:none; " id = "pyScriptTracker">0</div> -->
-    
+    <script src="script.js" type="module"></script>
 
 </body>
 </html>
