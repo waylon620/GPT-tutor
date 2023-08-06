@@ -151,6 +151,35 @@
     cursor: pointer;
     transition: background 0.23s;
   }
+  .downloadbtn {
+    position: relative;
+    right: -200px;
+    border-radius: 5px;
+    margin-left: 10px;
+    background: rgb(0, 196, 65);
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.23s;
+    border: none;
+    outline: none;
+  }
+
+  .clearbtn {
+    height: 30px;
+    position: relative;
+    right: -120px;
+    border-radius: 5px;
+    margin-left: 10px;
+    background: rgb(111, 111, 111);
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.23s;
+    border: none;
+    outline: none;
+  }
+
   .msger-send-btn:hover {
     background: rgb(0, 180, 50);
   }
