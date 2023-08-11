@@ -11,6 +11,10 @@ document.getElementById("downloadBtn").addEventListener("click", () => {
   saveHistoryToJson();
 });
 
+document.getElementById("bingbtn").addEventListener("click", () => {
+  sendBing();
+});
+
 document.getElementById("clearBtn").addEventListener("click", () => {
   msgerChat.innerHTML = ''; // Clear the chat interface
   history = []; // Clear the history
@@ -50,7 +54,7 @@ async function GPT_api(message, user_time){
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer '
+          Authorization: 'Bearer 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'
         },
         body: JSON.stringify(requestBody)
     };
@@ -183,4 +187,22 @@ function onPageLoad() {
             "3.How to get AC(accepted)" +
             "After reading the instrctions,say whether or not you clearly understand the instructions."
             );
+}
+
+function sendBing() {
+  fetch('http://127.0.0.1:5000/bing', {
+      method: 'POST',
+      headers: {
+          'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({data: msgerInput.value})
+  })
+  .then(response => response.json())
+  .then(data => {
+      // document.getElementById('result').innerText = data.output;
+      console.log(data.output);
+  })
+  .catch(error => {
+      console.error('Error:', error);
+  });
 }
