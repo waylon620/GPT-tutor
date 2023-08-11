@@ -54,7 +54,7 @@ async function GPT_api(message, user_time){
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer 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'
+          Authorization: 'Bearer '
         },
         body: JSON.stringify(requestBody)
     };
