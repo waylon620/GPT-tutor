@@ -153,7 +153,7 @@
   }
   .downloadbtn {
     position: relative;
-    right: -200px;
+    right: -50px;
     border-radius: 5px;
     margin-left: 10px;
     background: rgb(0, 196, 65);
@@ -168,7 +168,7 @@
   .clearbtn {
     height: 30px;
     position: relative;
-    right: -120px;
+    right: -20px;
     border-radius: 5px;
     margin-left: 10px;
     background: rgb(111, 111, 111);

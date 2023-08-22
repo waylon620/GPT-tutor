@@ -9,6 +9,7 @@ CORS(app)
 
 
 async def async_bing(user_input):
+    return {'output': "HELLOO"}
     cookies = json.loads(open("bing_cookies_test.json", encoding="utf-8").read())
     bot = await Chatbot.create(cookies=cookies)
     response = await bot.ask(prompt=user_input, conversation_style=ConversationStyle.creative, simplify_response=True)
@@ -19,9 +20,12 @@ async def async_bing(user_input):
 @app.route('/bing', methods=['POST'])
 def bing():
     user_input = request.json.get('data')
+    print(user_input)
     loop = asyncio.get_event_loop()
     asyncio.set_event_loop(loop)
     result = loop.run_until_complete(async_bing(user_input))
+    result = (async_bing(user_input))
+    return result
     response = jsonify(result)
     response.headers.add('Access-Control-Allow-Origin', '*')
     return response

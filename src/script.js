@@ -1,11 +1,44 @@
-const msgerForm = get(".msger-inputarea");
-const msgerInput = get(".msger-input");
-const msgerChat = get(".msger-chat");
+const msgerForm = _get(".msger-inputarea");
+const msgerInput = _get(".msger-input");
+const msgerChat = _get(".msger-chat");
 const problem_type = document.getElementById("problem_type");
+
+// Utils
+function _get(selector, root = document) {
+  return root.querySelector(selector);
+}
+
 
 var history = []; //record the history
 
 var full_history = [];
+
+document.getElementById("open-input-btn").addEventListener("click", () => {
+  const topic = window.prompt("Enter the problem you want to ask:");
+  if (topic !== null) {
+      console.log("User entered:", topic);
+      // You can perform actions with the entered topic here
+
+      const jsonData = { topic: topic }; // Create a JSON object
+      const jsonBlob = new Blob([JSON.stringify(jsonData)], { type: "application/json" });
+
+      // Create a temporary anchor element to trigger the download
+      const downloadLink = document.createElement("a");
+      downloadLink.href = URL.createObjectURL(jsonBlob);
+      downloadLink.download = "user_problem.json"; // File name
+      downloadLink.click();
+
+      // Clean up
+      URL.revokeObjectURL(downloadLink.href);
+  }
+});
+
+document.getElementById("userid-btn").addEventListener("click", () => {
+  const id = window.prompt("Enter your id:");
+  if (id !== null) {
+      getRequest(id)
+  }
+});
 
 document.getElementById("downloadBtn").addEventListener("click", () => {
   saveHistoryToJson();
@@ -54,7 +87,7 @@ async function GPT_api(message, user_time){
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer '
+          Authorization: 'Bearer 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'
         },
         body: JSON.stringify(requestBody)
     };
@@ -128,34 +161,33 @@ function addToFull_History(input, time, response, ai_time) {
     full_history.push({ role: 'assistant', content: response, time : ai_time });
 }
 
-const data = { user_id: "user_id", type: problem_type.value, history: full_history };
+const data = { user_id: "waylon", type: problem_type.value, history: full_history };
 
 // Function to save history to a JSON file
 function saveHistoryToJson() {
   data.type = problem_type.value;
   data.history = full_history;
   const jsonData = JSON.stringify(data, null, 2);
-  const blob = new Blob([jsonData], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
+  console.log(JSON.parse(jsonData).user_id)
+  postRequest(jsonData); 
+
+  // const blob = new Blob([jsonData], { type: "application/json" });
+  // const url = URL.createObjectURL(blob);
   
-  // Create a link element to download the JSON file
-  const downloadLink = document.createElement("a");
-  downloadLink.href = url;
-  downloadLink.download = "chat_history.json";
-  document.body.appendChild(downloadLink);
+  // // Create a link element to download the JSON file
+  // const downloadLink = document.createElement("a");
+  // downloadLink.href = url;
+  // downloadLink.download = "chat_history.json";
+  // document.body.appendChild(downloadLink);
   
-  // Click the link to trigger the download
-  downloadLink.click();
+  // // Click the link to trigger the download
+  // downloadLink.click();
   
-  // Remove the link element
-  document.body.removeChild(downloadLink);
+  // // Remove the link element
+  // document.body.removeChild(downloadLink);
 }
 
 
-// Utils
-function get(selector, root = document) {
-  return root.querySelector(selector);
-}
 
 function formatDate(date) {
   const y = date.getFullYear();
@@ -174,23 +206,26 @@ function random(min, max) {
   return Math.floor(Math.random() * (max - min) + min);
 }
 
+
 window.onload = onPageLoad;
 function onPageLoad() {
-    console.log("pre prompt");
-    GPT_api("For the following instructions,please do it step by step: " + 
-            "As the python coding tutor,you should heip students in learning python with patience." +
-            "First ask user what is the coding problem the user faced to." +
-            "Secondly,ask user about the question of the coding problem." +
-            "There will be 3 types of question:" +
-            "1.How to solve the coding error?" +
-            "2.How to solve the coding problem?" +
-            "3.How to get AC(accepted)" +
-            "After reading the instrctions,say whether or not you clearly understand the instructions."
-            );
+  const userId = prompt("Please enter your ID:");
+  data.user_id = userId
+  console.log("pre prompt");
+  GPT_api("For the following instructions,please do it step by step: " + 
+          "As the python coding tutor,you should heip students in learning python with patience." +
+          "First ask user what is the coding problem the user faced to." +
+          "Secondly,ask user about the question of the coding problem." +
+          "There will be 3 types of question:" +
+          "1.How to solve the coding error?" +
+          "2.How to solve the coding problem?" +
+          "3.How to get AC(accepted)" +
+          "After reading the instrctions,say whether or not you clearly understand the instructions."
+          );
 }
 
-function sendBing() {
-  fetch('http://127.0.0.1:5000/bing', {
+async function sendBing() {
+  await fetch('http://127.0.0.1:5000/bing', {
       method: 'POST',
       headers: {
           'Content-Type': 'application/json'
@@ -206,3 +241,52 @@ function sendBing() {
       console.error('Error:', error);
   });
 }
+
+
+const url = 'http://localhost:8888/';
+async function getRequest(id) {
+  const payload = {
+    user_id: "11223"
+  };
+
+  const headers = {
+    'Content-Type': 'application/json'
+  };
+
+  axios({
+    method: 'get',
+    url: 'http://localhost:8888/',
+    headers: headers,
+    params: payload
+  })
+  .then(function (response) {
+    const rJson = response.data.data;
+    console.log(rJson);
+  })
+  .catch(function (error) {
+    console.error(error);
+  });
+
+}
+
+function postRequest(jsonData) {
+  const payload = {
+    user_id: JSON.parse(jsonData).user_id,
+    type: JSON.parse(jsonData).type,
+    chats: JSON.parse(jsonData).history
+  };
+
+  const headers = {
+    'Content-Type': 'application/json'
+  };
+
+  axios
+    .post(url, payload, { headers })
+    .then(response => {
+      console.log(response.data);
+    })
+    .catch(error => {
+      console.error('Error:', error);
+    });
+}
+
