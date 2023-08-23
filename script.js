@@ -44,8 +44,26 @@ document.getElementById("downloadBtn").addEventListener("click", () => {
   saveHistoryToJson();
 });
 
-document.getElementById("bingbtn").addEventListener("click", () => {
-  sendBing();
+document.getElementById("bingbtn").addEventListener("click", async () => {
+  event.preventDefault();
+  console.log("sendtobing");
+
+  try {
+    const response = await fetch('http://127.0.0.1:5000/bing', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ data: msgerInput.value })
+    });
+
+    const data = await response.json();
+    console.log(data.output);
+  } catch (error) {
+    console.error('Error:', error);
+  }
+
+  // await sendBing();
 });
 
 document.getElementById("clearBtn").addEventListener("click", () => {
@@ -60,18 +78,30 @@ const PERSON_IMG = "duck.svg";
 const BOT_NAME = "BOT";
 const PERSON_NAME = "User";
 
-msgerForm.addEventListener("submit", event => {
-    event.preventDefault();
+document.getElementById("chatgptbtn").addEventListener("click", () => {
+  event.preventDefault();
     
-    const msgText = msgerInput.value;
-    if (!msgText) return;
+  const msgText = msgerInput.value;
+  if (!msgText) return;
 
-    var user_time = appendMessage(PERSON_NAME, PERSON_IMG, "right", msgText);
-    const response = GPT_api(msgText, user_time);
-    //   botResponse(response);
-    msgerInput.value = "";
-
+  var user_time = appendMessage(PERSON_NAME, PERSON_IMG, "right", msgText);
+  const response = GPT_api(msgText, user_time);
+  //   botResponse(response);
+  msgerInput.value = "";
 });
+
+// msgerForm.addEventListener("submit", event => {
+//     event.preventDefault();
+    
+//     const msgText = msgerInput.value;
+//     if (!msgText) return;
+
+//     var user_time = appendMessage(PERSON_NAME, PERSON_IMG, "right", msgText);
+//     const response = GPT_api(msgText, user_time);
+//     //   botResponse(response);
+//     msgerInput.value = "";
+
+// });
 
 async function GPT_api(message, user_time){
     const type = problem_type.value;
@@ -87,7 +117,7 @@ async function GPT_api(message, user_time){
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer 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'
+          Authorization: 'Bearer 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'
         },
         body: JSON.stringify(requestBody)
     };
@@ -206,22 +236,22 @@ function random(min, max) {
   return Math.floor(Math.random() * (max - min) + min);
 }
 
-
 window.onload = onPageLoad;
 function onPageLoad() {
   const userId = prompt("Please enter your ID:");
-  data.user_id = userId
-  console.log("pre prompt");
-  GPT_api("For the following instructions,please do it step by step: " + 
-          "As the python coding tutor,you should heip students in learning python with patience." +
-          "First ask user what is the coding problem the user faced to." +
-          "Secondly,ask user about the question of the coding problem." +
-          "There will be 3 types of question:" +
-          "1.How to solve the coding error?" +
-          "2.How to solve the coding problem?" +
-          "3.How to get AC(accepted)" +
-          "After reading the instrctions,say whether or not you clearly understand the instructions."
-          );
+  data.user_id = userId;
+  getRequest(data.user_id);
+  // console.log("pre prompt");
+  // GPT_api("For the following instructions,please do it step by step: " + 
+  //         "As the python coding tutor,you should heip students in learning python with patience." +
+  //         "First ask user what is the coding problem the user faced to." +
+  //         "Secondly,ask user about the question of the coding problem." +
+  //         "There will be 3 types of question:" +
+  //         "1.How to solve the coding error?" +
+  //         "2.How to solve the coding problem?" +
+  //         "3.How to get AC(accepted)" +
+  //         "After reading the instrctions,say whether or not you clearly understand the instructions."
+  //         );
 }
 
 async function sendBing() {
@@ -246,26 +276,40 @@ async function sendBing() {
 const url = 'http://localhost:8888/';
 async function getRequest(id) {
   const payload = {
-    user_id: "11223"
+    user_id: id,
   };
 
   const headers = {
     'Content-Type': 'application/json'
   };
 
-  axios({
-    method: 'get',
-    url: 'http://localhost:8888/',
-    headers: headers,
-    params: payload
-  })
-  .then(function (response) {
-    const rJson = response.data.data;
-    console.log(rJson);
-  })
-  .catch(function (error) {
-    console.error(error);
-  });
+  axios
+    .post("http://localhost:8888/userhistory", payload, { headers })
+    .then(response => {
+      console.log(response.data.data);
+      console.log(response.data.data.length);
+      if(response.data.data.length > 0)
+      {
+        msgerChat.innerHTML = ''; // Clear the chat interface
+        history = []; // Clear the history
+        full_history = [];
+        // 循環遍歷每一個元素，進行復原
+        for (const item of response.data.data) {
+          const role = item.role;
+          const content = item.content;
+          const time = item.time;
+      
+          // 使用 role、content、time 進行復原
+          // 你可以呼叫你的 appendMessage 函數來顯示訊息
+          // 例如：
+          if(role == "assistant" || role == "system")  appendMessage(role, BOT_IMG, "left",content);
+          else appendMessage(role,PERSON_IMG,"right" ,content);
+        }
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+    });
 
 }
 
