@@ -3,7 +3,7 @@ const msgerInput = get(".msger-input");
 const msgerChat = get(".msger-chat");
 const problem_type = document.getElementById("problem_type");
 
-var history = []; //record the history
+var history_ = []; //record the history
 
 var full_history = [];
 
@@ -17,7 +17,7 @@ document.getElementById("bingbtn").addEventListener("click", () => {
 
 document.getElementById("clearBtn").addEventListener("click", () => {
   msgerChat.innerHTML = ''; // Clear the chat interface
-  history = []; // Clear the history
+  history_ = []; // Clear the history
   full_history = [];
 });
 
@@ -35,7 +35,7 @@ msgerForm.addEventListener("submit", event => {
 
     var user_time = appendMessage(PERSON_NAME, PERSON_IMG, "right", msgText);
     const response = GPT_api(msgText, user_time);
-    //   botResponse(response);
+      // botResponse(response);
     msgerInput.value = "";
 
 });
@@ -47,14 +47,14 @@ async function GPT_api(message, user_time){
     // console.log(message);
     const requestBody = {
         model: 'gpt-3.5-turbo',
-        messages: [{ role: 'system', content: 'You are a helpful assistant.' }, ...history, { role: 'user', content: message }]
+        messages: [{ role: 'system', content: 'You are a helpful assistant.' }, ...history_, { role: 'user', content: message }]
     };
     // console.log(requestBody.messages);
     const requestOptions = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer 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'
+          Authorization: 'Bearer '
         },
         body: JSON.stringify(requestBody)
     };
@@ -119,8 +119,8 @@ function botResponse(response) {
 }
 
 function addToHistory(input, response) {
-    history.push({ role: 'user', content: input });
-    history.push({ role: 'assistant', content: response });
+    history_.push({ role: 'user', content: input });
+    history_.push({ role: 'assistant', content: response });
 }
 
 function addToFull_History(input, time, response, ai_time) {
@@ -128,12 +128,12 @@ function addToFull_History(input, time, response, ai_time) {
     full_history.push({ role: 'assistant', content: response, time : ai_time });
 }
 
-const data = { user_id: "user_id", type: problem_type.value, history: full_history };
+const data = { user_id: "user_id", type: problem_type.value, history_: full_history };
 
 // Function to save history to a JSON file
 function saveHistoryToJson() {
   data.type = problem_type.value;
-  data.history = full_history;
+  data.history_ = full_history;
   const jsonData = JSON.stringify(data, null, 2);
   const blob = new Blob([jsonData], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -177,32 +177,53 @@ function random(min, max) {
 window.onload = onPageLoad;
 function onPageLoad() {
     console.log("pre prompt");
-    GPT_api("For the following instructions,please do it step by step: " + 
-            "As the python coding tutor,you should heip students in learning python with patience." +
-            "First ask user what is the coding problem the user faced to." +
-            "Secondly,ask user about the question of the coding problem." +
-            "There will be 3 types of question:" +
-            "1.How to solve the coding error?" +
-            "2.How to solve the coding problem?" +
-            "3.How to get AC(accepted)" +
-            "After reading the instrctions,say whether or not you clearly understand the instructions."
-            );
+    // GPT_api("For the following instructions,please do it step by step: " + 
+    //         "As the python coding tutor,you should heip students in learning python with patience." +
+    //         "First ask user what is the coding problem the user faced to." +
+    //         "Secondly,ask user about the question of the coding problem." +
+    //         "There will be 3 types of question:" +
+    //         "1.How to solve the coding error?" +
+    //         "2.How to solve the coding problem?" +
+    //         "3.How to get AC(accepted)" +
+    //         "After reading the instrctions,say whether or not you clearly understand the instructions."
+    //         );
 }
 
-function sendBing() {
-  fetch('http://127.0.0.1:5000/bing', {
+async function sendBing() {
+  const msgText = msgerInput.value;
+  if (!msgText) return;
+
+  var user_time = appendMessage(PERSON_NAME, PERSON_IMG, "right", msgText);
+  msgerInput.value = "";
+
+  await fetch('http://127.0.0.1:5000/bing', {
       method: 'POST',
       headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
       },
-      body: JSON.stringify({data: msgerInput.value})
+      body: JSON.stringify({bingInput: msgText})
+      // body: JSON.stringify({bingInput: "Hello, tell me what can you do"})
   })
-  .then(response => response.json())
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('Network error');
+    }
+    return response.text();
+  })
   .then(data => {
-      // document.getElementById('result').innerText = data.output;
-      console.log(data.output);
+    botResponse(JSON.parse(data).bingOutput.text);
+    // console.log(data)
   })
   .catch(error => {
-      console.error('Error:', error);
+    console.error('There was a problem with the Fetch operation:', error);
   });
+}
+
+function writeConsole(val){
+  console.log(val);
+}
+
+async function loadPkg(){
+  await pyodide.loadPackage("ssl")
 }
