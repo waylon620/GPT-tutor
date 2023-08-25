@@ -44,26 +44,10 @@ document.getElementById("downloadBtn").addEventListener("click", () => {
   saveHistoryToJson();
 });
 
-document.getElementById("bingbtn").addEventListener("click", async () => {
+document.getElementById("bingbtn").addEventListener("click", () => {
   event.preventDefault();
-  console.log("sendtobing");
-
-  try {
-    const response = await fetch('http://127.0.0.1:5000/bing', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ data: msgerInput.value })
-    });
-
-    const data = await response.json();
-    console.log(data.output);
-  } catch (error) {
-    console.error('Error:', error);
-  }
-
-  // await sendBing();
+  console.log("call bing~~");
+  sendBing();
 });
 
 document.getElementById("clearBtn").addEventListener("click", () => {
@@ -83,8 +67,8 @@ document.getElementById("chatgptbtn").addEventListener("click", () => {
     
   const msgText = msgerInput.value;
   if (!msgText) return;
-
-  var user_time = appendMessage(PERSON_NAME, PERSON_IMG, "right", msgText);
+  var time = formatDate(new Date());
+  var user_time = appendMessage(PERSON_NAME, PERSON_IMG, "right", msgText, time);
   const response = GPT_api(msgText, user_time);
   //   botResponse(response);
   msgerInput.value = "";
@@ -117,7 +101,7 @@ async function GPT_api(message, user_time){
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer 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'
+          Authorization: 'Bearer '
         },
         body: JSON.stringify(requestBody)
     };
@@ -132,8 +116,8 @@ async function GPT_api(message, user_time){
         const jsonResponse = await response.json();
         responseMessage = jsonResponse.choices[0].message.content.trim();
         // Use the response message as needed
-        console.log(responseMessage);
-        addToHistory(message, responseMessage);
+        // console.log(responseMessage);
+        // addToHistory(message, responseMessage);
       } else {
         // Handle the error case
         console.log('Error:', response.statusText);
@@ -148,9 +132,9 @@ async function GPT_api(message, user_time){
     return responseMessage;
 }
 
-function appendMessage(name, img, side, text) {
+function appendMessage(name, img, side, text ,time) {
   //   Simple solution for small apps
-  var time = formatDate(new Date());
+  // var time = formatDate(new Date());
   const msgHTML = `
     <div class="msg ${side}-msg">
       <div class="msg-img" style="background-image: url(${img})"></div>
@@ -173,17 +157,13 @@ function appendMessage(name, img, side, text) {
 }
 
 function botResponse(response) {
-    var ai_time = appendMessage(BOT_NAME, BOT_IMG, "left", response);
-
-    // setTimeout(() => {
-    //     appendMessage(BOT_NAME, BOT_IMG, "left", responseMessage);
-    // }, delay);
+    var time = formatDate(new Date());
+    var ai_time = appendMessage(BOT_NAME, BOT_IMG, "left", response, time);
     return ai_time;
 }
 
-function addToHistory(input, response) {
-    history.push({ role: 'user', content: input });
-    history.push({ role: 'assistant', content: response });
+function addToHistory(role, content,time) {
+    full_history.push({ role: role, content: content,time:time });
 }
 
 function addToFull_History(input, time, response, ai_time) {
@@ -199,22 +179,9 @@ function saveHistoryToJson() {
   data.history = full_history;
   const jsonData = JSON.stringify(data, null, 2);
   console.log(JSON.parse(jsonData).user_id)
+  console.log("save chat:")
+  console.log(full_history)
   postRequest(jsonData); 
-
-  // const blob = new Blob([jsonData], { type: "application/json" });
-  // const url = URL.createObjectURL(blob);
-  
-  // // Create a link element to download the JSON file
-  // const downloadLink = document.createElement("a");
-  // downloadLink.href = url;
-  // downloadLink.download = "chat_history.json";
-  // document.body.appendChild(downloadLink);
-  
-  // // Click the link to trigger the download
-  // downloadLink.click();
-  
-  // // Remove the link element
-  // document.body.removeChild(downloadLink);
 }
 
 
@@ -255,20 +222,34 @@ function onPageLoad() {
 }
 
 async function sendBing() {
+  const msgText = msgerInput.value;
+  if (!msgText) return;
+  var user_time = formatDate(new Date());
+  appendMessage(PERSON_NAME, PERSON_IMG, "right", msgText, user_time);
+  msgerInput.value = "";
+
   await fetch('http://127.0.0.1:5000/bing', {
       method: 'POST',
       headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
       },
-      body: JSON.stringify({data: msgerInput.value})
+      body: JSON.stringify({bingInput: msgText})
+      // body: JSON.stringify({bingInput: "Hello, tell me what can you do"})
   })
-  .then(response => response.json())
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('Network error');
+    }
+    return response.text();
+  })
   .then(data => {
-      // document.getElementById('result').innerText = data.output;
-      console.log(data.output);
+    botResponse(JSON.parse(data).bingOutput.text);
+    addToFull_History(msgText, user_time, JSON.parse(data).bingOutput.text, formatDate(new Date()));
+    // console.log(data)
   })
   .catch(error => {
-      console.error('Error:', error);
+    console.error('There was a problem with the Fetch operation:', error);
   });
 }
 
@@ -302,8 +283,9 @@ async function getRequest(id) {
           // 使用 role、content、time 進行復原
           // 你可以呼叫你的 appendMessage 函數來顯示訊息
           // 例如：
-          if(role == "assistant" || role == "system")  appendMessage(role, BOT_IMG, "left",content);
-          else appendMessage(role,PERSON_IMG,"right" ,content);
+          if(role == "assistant" || role == "system")  appendMessage(role, BOT_IMG, "left",content, time);
+          else appendMessage(role,PERSON_IMG,"right" ,content, time);
+          addToHistory(role,content,time);
         }
       }
     })
