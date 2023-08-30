@@ -1,16 +1,45 @@
 const msgerForm = _get(".msger-inputarea");
 const msgerInput = _get(".msger-input");
 const msgerChat = _get(".msger-chat");
-const problem_type = document.getElementById("problem_type");
+const problem_type = _get("#problem_type");
 
-// Utils
+/**
+ * Get DOM element using selector
+ * 
+ * @param {*} selector 
+ * @param {*} root 
+ * @returns 
+ */
 function _get(selector, root = document) {
   return root.querySelector(selector);
 }
 
+// Path to the API key file
+const apiKeyURL = "API_KEY.txt";
+const apiKey = await fetchAPIKey();
 
-var history = []; //record the history
+/**
+ * Fetch the API key from the API_KEY.txt file
+ * 
+ * @returns {string} The API key
+ */
+async function fetchAPIKey() {
+  try {
+    const response = await fetch(apiKeyURL);
+    if (!response.ok) {
+      throw new Error("Failed to fetch API key");
+    }
+    const apiKey = await response.text();
+    console.log("API key:", apiKey.slice(0, 3));
+    return apiKey.trim(); // Remove leading/trailing whitespace
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
 
+
+var history = [];
 var full_history = [];
 
 document.getElementById("open-input-btn").addEventListener("click", () => {
@@ -70,7 +99,6 @@ document.getElementById("chatgptbtn").addEventListener("click", () => {
   var time = formatDate(new Date());
   var user_time = appendMessage(PERSON_NAME, PERSON_IMG, "right", msgText, time);
   const response = GPT_api(msgText, user_time);
-  //   botResponse(response);
   msgerInput.value = "";
 });
 
@@ -96,12 +124,11 @@ async function GPT_api(message, user_time){
         model: 'gpt-3.5-turbo',
         messages: [{ role: 'system', content: 'You are a helpful assistant.' }, ...history, { role: 'user', content: message }]
     };
-    // console.log(requestBody.messages);
     const requestOptions = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer '
+          Authorization: 'Bearer ' + apiKey
         },
         body: JSON.stringify(requestBody)
     };
@@ -208,17 +235,6 @@ function onPageLoad() {
   const userId = prompt("Please enter your ID:");
   data.user_id = userId;
   getRequest(data.user_id);
-  // console.log("pre prompt");
-  // GPT_api("For the following instructions,please do it step by step: " + 
-  //         "As the python coding tutor,you should heip students in learning python with patience." +
-  //         "First ask user what is the coding problem the user faced to." +
-  //         "Secondly,ask user about the question of the coding problem." +
-  //         "There will be 3 types of question:" +
-  //         "1.How to solve the coding error?" +
-  //         "2.How to solve the coding problem?" +
-  //         "3.How to get AC(accepted)" +
-  //         "After reading the instrctions,say whether or not you clearly understand the instructions."
-  //         );
 }
 
 async function sendBing() {
