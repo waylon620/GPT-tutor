@@ -14,6 +14,7 @@ function _get(selector, root = document) {
   return root.querySelector(selector);
 }
 
+
 // Path to the API key file
 const apiKeyURL = "API_KEY.txt";
 const apiKey = await fetchAPIKey();
@@ -38,12 +39,13 @@ async function fetchAPIKey() {
   }
 }
 
+=======
+//紀錄使用者與系統對話內容以及時間
 
-var history = [];
 var full_history = [];
-
+var topic = "";
 document.getElementById("open-input-btn").addEventListener("click", () => {
-  const topic = window.prompt("Enter the problem you want to ask:");
+  topic = window.prompt("Enter the problem description:");
   if (topic !== null) {
       console.log("User entered:", topic);
       // You can perform actions with the entered topic here
@@ -51,21 +53,22 @@ document.getElementById("open-input-btn").addEventListener("click", () => {
       const jsonData = { topic: topic }; // Create a JSON object
       const jsonBlob = new Blob([JSON.stringify(jsonData)], { type: "application/json" });
 
-      // Create a temporary anchor element to trigger the download
-      const downloadLink = document.createElement("a");
-      downloadLink.href = URL.createObjectURL(jsonBlob);
-      downloadLink.download = "user_problem.json"; // File name
-      downloadLink.click();
+      // // Create a temporary anchor element to trigger the download
+      // const downloadLink = document.createElement("a");
+      // downloadLink.href = URL.createObjectURL(jsonBlob);
+      // downloadLink.download = "user_problem.json"; // File name
+      // downloadLink.click();
 
-      // Clean up
-      URL.revokeObjectURL(downloadLink.href);
+      // // Clean up
+      // URL.revokeObjectURL(downloadLink.href);
   }
 });
 
 document.getElementById("userid-btn").addEventListener("click", () => {
   const id = window.prompt("Enter your id:");
   if (id !== null) {
-      getRequest(id)
+    data.user_id = id
+    getRequest(id)
   }
 });
 
@@ -75,13 +78,14 @@ document.getElementById("downloadBtn").addEventListener("click", () => {
 
 document.getElementById("bingbtn").addEventListener("click", () => {
   event.preventDefault();
+  loading_start();
   console.log("call bing~~");
   sendBing();
+  loading_finished();
 });
 
 document.getElementById("clearBtn").addEventListener("click", () => {
   msgerChat.innerHTML = ''; // Clear the chat interface
-  history = []; // Clear the history
   full_history = [];
 });
 
@@ -91,38 +95,96 @@ const PERSON_IMG = "duck.svg";
 const BOT_NAME = "BOT";
 const PERSON_NAME = "User";
 
-document.getElementById("chatgptbtn").addEventListener("click", () => {
+document.getElementById("chatgptbtn").addEventListener("click", async () => {
   event.preventDefault();
-    
   const msgText = msgerInput.value;
   if (!msgText) return;
+
+  if(topic == "") {
+    window.alert("Please provide your problem description.");
+    return;
+  }
+
+  //get question's type
+  var type_prompt = "*Instructions*\n"
+    + "- Determine the type of question below among:\n"
+    + "  1. Undesired output,\n"
+    + "  2. Hint,\n"
+    + "  3. Compile error,\n"
+    + "  4. Not getting AC.\n"
+    + "- Reply with the type without an index.\n\n"
+    + "*Question*\nHow to solve this question?\n"
+
+  const type_response = GPT_api(type_prompt + msgText);
+
+  //針對不同type使用不同prompt
+  if (type_response == "undesired"){
+    const system_message = "*Instruction*" +
+    "The goal is to provide a hint to help the student diagnose why their code is producing an undesired output with the input provided by the student. Below are the detailed steps you need to follow:" 
+    + "1. Ask the student about the intention of the code they provide if the student didn't say it in the question. e.g. \"Can you explain how you think your code should work? \" "
+    + "2. You can ask the student to add `print(...)` in the code and specify the position and what to print. Or you can provide test cases which are different from those provided by the student, and then ask the student to run the code for you to help debug."
+    + "3. After those, pose thought-provoking questions, and list out any potential pitfalls or logical errors that might be causing the unexpected output."
+    + "4. The problem that can be fixed with less code or is easier to fix should be addressed first."
+  }
+  else if (type_response == "hint"){
+    const system_message = "*Instruction*  Provide hints for the student to solve their problem, and below are the steps you must follow:"
+    + "1. Explain the thing that the student is asking with easy-to-understand language and examples if possible."
+    + "2. List out 3 different strategies including what algorithm, data structure … to use, then provide pros and cons for each one of them for the student's reference."
+    + "3. Choose one strategy listed above, then give a high-level step by step guidance for example."
+    + "4. Remind the student to take care of some potential pitfalls."
+    + "5. List out the keywords for coding knowledge that may be applied to the student's question or this coding problem."
+  }
+  else if (type_response == "error"){
+    const system_message = "*Instruction*  The goal is to provide a hint to help the student diagnose why their code is having a compile error. Below are the detailed steps you need to follow:"
+    + "1. Explain the error message provided by the compiler."
+    + "2. Review syntax, variable names, and data types, and if that's the reason causing the compile error, tell the student to check for it with questions."
+    + "3. Pose thought-provoking questions, and list out any potential pitfalls or logical errors that might be causing the compile error."
+  }
+  else if (type_response == "not ac"){
+    const system_message = "*Instruction*  Provide a hint to help the student optimize their code and address issues causing it not to get accepted on the online judge. Below are the detailed steps you need to follow:"
+    + "1. If there's a time limit exceeded (TLE), then assume the logic of the code is correct and provide hints to help the student optimize the efficiency of the code, and then skip the below steps. "
+    + "2. If there's no TLE, then for each small part of the code provided by the student. Imagine different scenarios that might cause it to fail on the online judge. Consider the logic, edge cases, and potential bottlenecks in the algorithm. "
+    + "3. Encourage the student to review the problem requirements and trace the code to ensure it meets those requirements."
+    + "4. You can ask the student to add `print(...)` in the code and specify the position and what to print. Or you can provide test cases which are different from those provided by the student, and then ask the student to run the code for you to help debug."
+  }
+  else {}
+
+  // GPT_api(msgText , system_message);
+
   var time = formatDate(new Date());
   var user_time = appendMessage(PERSON_NAME, PERSON_IMG, "right", msgText, time);
-  const response = GPT_api(msgText, user_time);
+
   msgerInput.value = "";
+  loading_start();
+  try {
+    const response = await GPT_api(msgText);
+    var ai_time = botResponse(response);
+    addToFull_History(msgText, user_time, response, ai_time);
+  } catch (error) {
+    // Handle any errors that occur during the GPT_api call
+    console.error(error);
+  }
+  loading_finished();
 });
 
-// msgerForm.addEventListener("submit", event => {
-//     event.preventDefault();
-    
-//     const msgText = msgerInput.value;
-//     if (!msgText) return;
 
-//     var user_time = appendMessage(PERSON_NAME, PERSON_IMG, "right", msgText);
-//     const response = GPT_api(msgText, user_time);
-//     //   botResponse(response);
-//     msgerInput.value = "";
-
-// });
-
-async function GPT_api(message, user_time){
+async function GPT_api(message, system_message = ''){
     const type = problem_type.value;
     console.log(type);
     var responseMessage = "";
     // console.log(message);
     const requestBody = {
         model: 'gpt-3.5-turbo',
-        messages: [{ role: 'system', content: 'You are a helpful assistant.' }, ...history, { role: 'user', content: message }]
+        messages: [{ role: 'system', content: "*Role*\nBehave as a coding tutor with the following qualities:\n"
+                    + "- Be inspiring, patient, and professional.\n"
+                    + "- Use structured content and bullet points to enhance clarity.\n"
+                    + "- Avoid providing modified code or direct answers.\n"
+                    + "- Encourage thought-provoking questions to foster insight.\n"
+                    + "- Foster interactivity with the student."}
+                , { role: 'system', content: system_message }
+                , { role: 'user', content: "this is my problem description: \n" + topic }
+                , ...full_history.map(messageObj => ({ role: messageObj.role, content: messageObj.content }))
+                , { role: 'user', content: message }]
     };
     const requestOptions = {
         method: 'POST',
@@ -142,9 +204,6 @@ async function GPT_api(message, user_time){
     if (response.ok) {
         const jsonResponse = await response.json();
         responseMessage = jsonResponse.choices[0].message.content.trim();
-        // Use the response message as needed
-        // console.log(responseMessage);
-        // addToHistory(message, responseMessage);
       } else {
         // Handle the error case
         console.log('Error:', response.statusText);
@@ -153,9 +212,7 @@ async function GPT_api(message, user_time){
       // Handle the error case
       console.log('Error:', error);
     }
-    var ai_time = botResponse(responseMessage);
-    addToFull_History(message, user_time, responseMessage, ai_time);
-    console.log(full_history);
+
     return responseMessage;
 }
 
@@ -186,6 +243,7 @@ function appendMessage(name, img, side, text ,time) {
 function botResponse(response) {
     var time = formatDate(new Date());
     var ai_time = appendMessage(BOT_NAME, BOT_IMG, "left", response, time);
+    console.log("response", response)
     return ai_time;
 }
 
@@ -230,11 +288,20 @@ function random(min, max) {
   return Math.floor(Math.random() * (max - min) + min);
 }
 
+function loading_start(){
+  document.querySelector("#loader").style.display = "block";
+}
+
+function loading_finished(){
+  document.querySelector("#loader").style.display = "none";
+}
+
 window.onload = onPageLoad;
 function onPageLoad() {
   const userId = prompt("Please enter your ID:");
   data.user_id = userId;
   getRequest(data.user_id);
+  loading_finished();
 }
 
 async function sendBing() {
@@ -272,6 +339,8 @@ async function sendBing() {
 
 const url = 'http://localhost:8888/';
 async function getRequest(id) {
+  msgerChat.innerHTML = ''; // Clear the chat interface
+  full_history = [];
   const payload = {
     user_id: id,
   };
@@ -288,7 +357,6 @@ async function getRequest(id) {
       if(response.data.data.length > 0)
       {
         msgerChat.innerHTML = ''; // Clear the chat interface
-        history = []; // Clear the history
         full_history = [];
         // 循環遍歷每一個元素，進行復原
         for (const item of response.data.data) {
