@@ -1,12 +1,44 @@
 const msgerForm = _get(".msger-inputarea");
 const msgerInput = _get(".msger-input");
 const msgerChat = _get(".msger-chat");
-const problem_type = document.getElementById("problem_type");
+const problem_type = _get("#problem_type");
 
-// Utils
+/**
+ * Get DOM element using selector
+ * 
+ * @param {*} selector 
+ * @param {*} root 
+ * @returns 
+ */
 function _get(selector, root = document) {
   return root.querySelector(selector);
 }
+
+
+// Path to the API key file
+const apiKeyURL = "API_KEY.txt";
+var apiKey = "";
+
+/**
+ * Fetch the API key from the API_KEY.txt file
+ * 
+ * @returns {string} The API key
+ */
+async function fetchAPIKey() {
+  try {
+    const response = await fetch(apiKeyURL);
+    if (!response.ok) {
+      throw new Error("Failed to fetch API key");
+    }
+    const apiKey = await response.text();
+    console.log("API key:", apiKey.slice(0, 3));
+    return apiKey.trim(); // Remove leading/trailing whitespace
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
+
 
 //紀錄使用者與系統對話內容以及時間
 var full_history = [];
@@ -120,6 +152,7 @@ document.getElementById("chatgptbtn").addEventListener("click", async () => {
 
   var time = formatDate(new Date());
   var user_time = appendMessage(PERSON_NAME, PERSON_IMG, "right", msgText, time);
+
   msgerInput.value = "";
   loading_start();
   try {
@@ -152,12 +185,11 @@ async function GPT_api(message, system_message = ''){
                 , ...full_history.map(messageObj => ({ role: messageObj.role, content: messageObj.content }))
                 , { role: 'user', content: message }]
     };
-    // console.log(requestBody.messages);
     const requestOptions = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer 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'
+          Authorization: 'Bearer ' + apiKey 
         },
         body: JSON.stringify(requestBody)
     };
@@ -263,13 +295,13 @@ function loading_finished(){
   document.querySelector("#loader").style.display = "none";
 }
 
-window.onload = onPageLoad;
-function onPageLoad() {
+window.addEventListener("load", function() {
   const userId = prompt("Please enter your ID:");
+  apiKey = fetchAPIKey();
   data.user_id = userId;
-  getRequest(data.user_id);
+  getRequest(data.user_id); // Assuming getRequest is an async function
   loading_finished();
-}
+});
 
 async function sendBing() {
   const msgText = msgerInput.value;
