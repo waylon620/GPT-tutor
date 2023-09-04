@@ -17,7 +17,7 @@ function _get(selector, root = document) {
 
 // Path to the API key file
 const apiKeyURL = "API_KEY.txt";
-const apiKey = await fetchAPIKey();
+var apiKey = "";
 
 /**
  * Fetch the API key from the API_KEY.txt file
@@ -189,7 +189,7 @@ async function GPT_api(message, system_message = ''){
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + apiKey
+          Authorization: 'Bearer ' + apiKey 
         },
         body: JSON.stringify(requestBody)
     };
@@ -295,13 +295,13 @@ function loading_finished(){
   document.querySelector("#loader").style.display = "none";
 }
 
-window.onload = onPageLoad;
-function onPageLoad() {
+window.addEventListener("load", function() {
   const userId = prompt("Please enter your ID:");
+  apiKey = fetchAPIKey();
   data.user_id = userId;
-  getRequest(data.user_id);
+  getRequest(data.user_id); // Assuming getRequest is an async function
   loading_finished();
-}
+});
 
 async function sendBing() {
   const msgText = msgerInput.value;
