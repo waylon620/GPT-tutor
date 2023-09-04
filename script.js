@@ -39,9 +39,8 @@ async function fetchAPIKey() {
   }
 }
 
-=======
-//紀錄使用者與系統對話內容以及時間
 
+//紀錄使用者與系統對話內容以及時間
 var full_history = [];
 var topic = "";
 document.getElementById("open-input-btn").addEventListener("click", () => {
