@@ -295,9 +295,9 @@ function loading_finished(){
   document.querySelector("#loader").style.display = "none";
 }
 
-window.addEventListener("load", function() {
+window.addEventListener("load", async function() {
   const userId = prompt("Please enter your ID:");
-  apiKey = fetchAPIKey();
+  apiKey = await fetchAPIKey();
   data.user_id = userId;
   getRequest(data.user_id); // Assuming getRequest is an async function
   loading_finished();
