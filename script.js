@@ -106,13 +106,16 @@ document.getElementById("chatgptbtn").addEventListener("click", async () => {
 
   //get question's type
   var type_prompt = "*Instructions*\n"
-    + "- Determine the type of question below among:\n"
-    + "  1. Undesired output,\n"
-    + "  2. Hint,\n"
-    + "  3. Compile error,\n"
-    + "  4. Not getting AC.\n"
-    + "- Reply with the type without an index.\n\n"
-    + "*Question*\nHow to solve this question?\n"
+    + "- Please tell which type of coding question is the one provided below among:\n"
+    + "  - Undesired output (Help student find the underlying problem that produces the undesired output)\n"
+    + "  - Hint (Give student good guidance that is thought-provoking, and provide related concepts)\n"
+    + "  - Compile error (Help student find bugs in the code and needed knowledge related to the error message)\n"
+    + "  - Not getting AC (Help student find the underlying problem that might lead to not passing all the test cases on the online judge system)\n"
+    + "!!!Only contain the first character of the name of that type in your response!!!\n"
+    + "e.g. Question: Why is the code having a compile error? You: C (since it's a compile error)\n"
+    + "Question: Only 9 of 17 test cases are accepted, why? You: N (since it's not getting AC)\n"
+    + "----\n"
+    + "*Question*";
 
   const type_response = GPT_api(type_prompt + msgText);
 
