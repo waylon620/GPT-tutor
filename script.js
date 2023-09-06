@@ -334,7 +334,6 @@ function loading_finished(){
   document.querySelector("#loader").style.display = "none";
 }
 
-// On page load, fetch the API key and get the user ID to retrieve the chat history
 window.addEventListener("load", async function() {
   const userId = prompt("Please enter your ID:");
   apiKey = await fetchAPIKey();
