@@ -6,8 +6,8 @@ const problem_type = _get("#problem_type");
 /**
  * Get DOM element using selector
  * 
- * @param {*} selector 
- * @param {*} root 
+ * @param selector 
+ * @param root 
  * @returns 
  */
 function _get(selector, root = document) {
@@ -31,7 +31,7 @@ async function fetchAPIKey() {
       throw new Error("Failed to fetch API key");
     }
     const apiKey = await response.text();
-    console.log("API key:", apiKey.slice(0, 3));
+    console.log("API key:", apiKey.slice(0, 10));
     return apiKey.trim(); // Remove leading/trailing whitespace
   } catch (error) {
     console.error(error);
@@ -67,25 +67,22 @@ document.getElementById("userid-btn").addEventListener("click", () => {
   const id = window.prompt("Enter your id:");
   if (id !== null) {
     data.user_id = id
-    getRequest(id)
+    retrieveChatHistory(id)
   }
-});
-
-document.getElementById("downloadBtn").addEventListener("click", () => {
-  saveHistoryToJson();
 });
 
 document.getElementById("bingbtn").addEventListener("click", () => {
   event.preventDefault();
   loading_start();
   console.log("call bing~~");
-  sendBing();
+  requestBingApi();
   loading_finished();
 });
 
 document.getElementById("clearBtn").addEventListener("click", () => {
   msgerChat.innerHTML = ''; // Clear the chat interface
   full_history = [];
+  UpdateChatHistoryToDB();
 });
 
 // Icons made by Freepik from www.flaticon.com
@@ -96,6 +93,9 @@ const PERSON_NAME = "User";
 
 document.getElementById("chatgptbtn").addEventListener("click", async () => {
   event.preventDefault();
+
+  console.log(apiKey)
+
   const msgText = msgerInput.value;
   if (!msgText) return;
 
@@ -117,7 +117,7 @@ document.getElementById("chatgptbtn").addEventListener("click", async () => {
     + "----\n"
     + "*Question*";
 
-  const type_response = GPT_api(type_prompt + msgText);
+  const type_response = requestChatGptApi(type_prompt + msgText);
 
   //針對不同type使用不同prompt
   if (type_response == "undesired"){
@@ -159,18 +159,25 @@ document.getElementById("chatgptbtn").addEventListener("click", async () => {
   msgerInput.value = "";
   loading_start();
   try {
-    const response = await GPT_api(msgText);
-    var ai_time = botResponse(response);
+    const response = await requestChatGptApi(msgText);
+    var ai_time = tutorResponse(response);
     addToFull_History(msgText, user_time, response, ai_time);
   } catch (error) {
     // Handle any errors that occur during the GPT_api call
     console.error(error);
   }
   loading_finished();
+  UpdateChatHistoryToDB();
 });
 
-
-async function GPT_api(message, system_message = ''){
+/**
+ * Send the engineered-prompt to the Chat GPT API and get the response
+ * 
+ * @param {string} message
+ * @param {string} tutorInstruction
+ * @returns {string} The response from the Chat GPT API
+ */
+async function requestChatGptApi(message, tutorInstruction = ''){
     const type = problem_type.value;
     console.log(type);
     var responseMessage = "";
@@ -183,7 +190,7 @@ async function GPT_api(message, system_message = ''){
                     + "- Avoid providing modified code or direct answers.\n"
                     + "- Encourage thought-provoking questions to foster insight.\n"
                     + "- Foster interactivity with the student."}
-                , { role: 'system', content: system_message }
+                , { role: 'system', content: tutorInstruction }
                 , { role: 'user', content: "this is my problem description: \n" + topic }
                 , ...full_history.map(messageObj => ({ role: messageObj.role, content: messageObj.content }))
                 , { role: 'user', content: message }]
@@ -218,8 +225,17 @@ async function GPT_api(message, system_message = ''){
     return responseMessage;
 }
 
+/**
+ * Append message to the chat window
+ * 
+ * @param {*} name
+ * @param {*} img 
+ * @param {*} side 
+ * @param {*} text 
+ * @param {*} time 
+ * @returns 
+ */
 function appendMessage(name, img, side, text ,time) {
-  //   Simple solution for small apps
   // var time = formatDate(new Date());
   const msgHTML = `
     <div class="msg ${side}-msg">
@@ -242,13 +258,20 @@ function appendMessage(name, img, side, text ,time) {
   return time;
 }
 
-function botResponse(response) {
+/**
+ * Append GPT-Tutor's response to the chat window 
+ * 
+ * @param {*} response 
+ * @returns 
+ */
+function tutorResponse(response) {
     var time = formatDate(new Date());
     var ai_time = appendMessage(BOT_NAME, BOT_IMG, "left", response, time);
     console.log("response", response)
     return ai_time;
 }
 
+// TODO: unclear what these two function does
 function addToHistory(role, content,time) {
     full_history.push({ role: role, content: content,time:time });
 }
@@ -260,8 +283,10 @@ function addToFull_History(input, time, response, ai_time) {
 
 const data = { user_id: "waylon", type: problem_type.value, history: full_history };
 
-// Function to save history to a JSON file
-function saveHistoryToJson() {
+/** 
+ * Save the chat history to a JSON file and post it to MongoDB server
+*/
+function UpdateChatHistoryToDB() {
   data.type = problem_type.value;
   data.history = full_history;
   const jsonData = JSON.stringify(data, null, 2);
@@ -272,7 +297,12 @@ function saveHistoryToJson() {
 }
 
 
-
+/**
+ *  Format the date to a string
+ * 
+ * @param date 
+ * @returns formatted date string
+ */
 function formatDate(date) {
   const y = date.getFullYear();
   const mo = "0" + (date.getMonth() + 1);
@@ -290,23 +320,33 @@ function random(min, max) {
   return Math.floor(Math.random() * (max - min) + min);
 }
 
+/**
+ * Show the loading animation
+ */
 function loading_start(){
   document.querySelector("#loader").style.display = "block";
 }
 
+/**
+ * Hide the loading animation
+ */
 function loading_finished(){
   document.querySelector("#loader").style.display = "none";
 }
 
-window.addEventListener("load", function() {
+// On page load, fetch the API key and get the user ID to retrieve the chat history
+window.addEventListener("load", async function() {
   const userId = prompt("Please enter your ID:");
-  apiKey = fetchAPIKey();
+  apiKey = await fetchAPIKey();
   data.user_id = userId;
-  getRequest(data.user_id); // Assuming getRequest is an async function
+  retrieveChatHistory(data.user_id);
   loading_finished();
 });
 
-async function sendBing() {
+/** 
+ *  Testing the Bing API
+ */
+async function requestBingApi() {
   const msgText = msgerInput.value;
   if (!msgText) return;
   var user_time = formatDate(new Date());
@@ -329,7 +369,7 @@ async function sendBing() {
     return response.text();
   })
   .then(data => {
-    botResponse(JSON.parse(data).bingOutput.text);
+    tutorResponse(JSON.parse(data).bingOutput.text);
     addToFull_History(msgText, user_time, JSON.parse(data).bingOutput.text, formatDate(new Date()));
     // console.log(data)
   })
@@ -340,7 +380,13 @@ async function sendBing() {
 
 
 const url = 'http://localhost:8888/';
-async function getRequest(id) {
+
+/**
+ * Get the chat history from the server and display it on the chat window
+ * 
+ * @param {String} id 
+ */
+async function retrieveChatHistory(id) {
   msgerChat.innerHTML = ''; // Clear the chat interface
   full_history = [];
   const payload = {
@@ -381,6 +427,11 @@ async function getRequest(id) {
 
 }
 
+/**
+ * Post a json file to the server 
+ *  
+ * @param jsonData 
+ */
 function postRequest(jsonData) {
   const payload = {
     user_id: JSON.parse(jsonData).user_id,
