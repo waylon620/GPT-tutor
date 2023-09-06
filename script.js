@@ -365,15 +365,6 @@ function loading_finished(){
 }
 
 
-window.addEventListener("load", async function() {
-  const userId = prompt("Please enter your ID:");
-  apiKey = await fetchAPIKey();
-  data.user_id = userId;
-  retrieveChatHistory(data.user_id);
-  loading_finished();
-});
-
-
 /** 
  *  Testing the Bing API
  */
@@ -511,4 +502,12 @@ msgerInput.addEventListener("keydown", function(event) {
     chatgptButton.click();
   }
 })
+
+window.addEventListener("load", async function() {
+  const userId = prompt("Please enter your ID:");
+  apiKey = await fetchAPIKey();
+  data.user_id = userId;
+  retrieveChatHistory(data.user_id);
+  loading_finished();
+});
 
