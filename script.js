@@ -19,7 +19,7 @@ var apiKey = "";
 
 //紀錄使用者與系統對話內容以及時間
 var full_history = [];
-var topic = "";
+var problemDescription = "";
 
 // Icons made by Freepik from www.flaticon.com
 const BOT_IMG = "angular.svg";
@@ -72,12 +72,12 @@ async function fetchAPIKey() {
  * Ask the student to provide the problem description
 */
 function getProblemDescription() {
-  topic = window.prompt("Enter the problem description:");
-  if (topic !== null) {
-      console.log("User entered:", topic);
+  problemDescription = window.prompt("Enter the problem description:");
+  if (problemDescription !== null) {
+      console.log("User entered:", problemDescription);
       // You can perform actions with the entered topic here
 
-      const jsonData = { topic: topic }; // Create a JSON object
+      const jsonData = { topic: problemDescription }; // Create a JSON object
       const jsonBlob = new Blob([JSON.stringify(jsonData)], { type: "application/json" });
 
       // // Create a temporary anchor element to trigger the download
@@ -121,7 +121,7 @@ async function getTutorResponse() {
   const msgText = msgerInput.value;
   if (!msgText) return;
 
-  if(topic == "") {
+  if(problemDescription == "") {
     window.alert("Please provide your problem description.");
     return;
   }
@@ -215,7 +215,7 @@ async function requestChatGptApi(message, tutorInstruction = ''){
                     + "- Encourage thought-provoking questions to foster insight.\n"
                     + "- Foster interactivity with the student."}
                 , { role: 'system', content: tutorInstruction }
-                , { role: 'user', content: "this is my problem description: \n" + topic }
+                , { role: 'user', content: "this is my problem description: \n" + problemDescription }
                 , ...full_history.map(messageObj => ({ role: messageObj.role, content: messageObj.content }))
                 , { role: 'user', content: message }]
     };
