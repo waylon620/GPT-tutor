@@ -1,23 +1,51 @@
+///////////////
+// Constants //
+///////////////
+
+// Dom elements
 const msgerForm = _get(".msger-inputarea");
 const msgerInput = _get(".msger-input");
 const msgerChat = _get(".msger-chat");
-const problem_type = _get("#problem_type");
+const problemType = _get("#problem_type");
+const chatgptButton = _get("#chatgptbtn");
+const bingButton = _get("#bingbtn");
+const clearChatHistoryButton = _get("#clearBtn");
+const getProblemDescriptionButton = _get("#open-input-btn")
+const userIdButton = _get("#userid-btn")
+
+// Path to the API key file
+const apiKeyURL = "API_KEY.txt";
+var apiKey = "";
+
+//紀錄使用者與系統對話內容以及時間
+var full_history = [];
+var topic = "";
+
+// Icons made by Freepik from www.flaticon.com
+const BOT_IMG = "angular.svg";
+const PERSON_IMG = "duck.svg";
+const BOT_NAME = "BOT";
+const PERSON_NAME = "User";
+
+const data = { user_id: "waylon", type: problemType.value, history: full_history };
+
+const dbLocalHostUrl = 'http://localhost:8888/';
+
+///////////////
+// Functions //
+///////////////
 
 /**
  * Get DOM element using selector
  * 
  * @param selector 
  * @param root 
- * @returns 
+ * @returns DOM element
  */
 function _get(selector, root = document) {
   return root.querySelector(selector);
 }
 
-
-// Path to the API key file
-const apiKeyURL = "API_KEY.txt";
-var apiKey = "";
 
 /**
  * Fetch the API key from the API_KEY.txt file
@@ -40,10 +68,10 @@ async function fetchAPIKey() {
 }
 
 
-//紀錄使用者與系統對話內容以及時間
-var full_history = [];
-var topic = "";
-document.getElementById("open-input-btn").addEventListener("click", () => {
+/**
+ * Ask the student to provide the problem description
+*/
+function getProblemDescription() {
   topic = window.prompt("Enter the problem description:");
   if (topic !== null) {
       console.log("User entered:", topic);
@@ -61,41 +89,35 @@ document.getElementById("open-input-btn").addEventListener("click", () => {
       // // Clean up
       // URL.revokeObjectURL(downloadLink.href);
   }
-});
+}
 
-document.getElementById("userid-btn").addEventListener("click", () => {
+
+/**
+ * Ask the student to provide the user id then retrieve the chat history from the server
+ */
+function changeUser() {
   const id = window.prompt("Enter your id:");
   if (id !== null) {
     data.user_id = id
     retrieveChatHistory(id)
   }
-});
+}
 
-document.getElementById("bingbtn").addEventListener("click", () => {
-  event.preventDefault();
-  loading_start();
-  console.log("call bing~~");
-  requestBingApi();
-  loading_finished();
-});
 
-document.getElementById("clearBtn").addEventListener("click", () => {
+/** 
+ * Clear the chat history
+ */
+function clearChatHistory() {
   msgerChat.innerHTML = ''; // Clear the chat interface
   full_history = [];
   UpdateChatHistoryToDB();
-});
+}
 
-// Icons made by Freepik from www.flaticon.com
-const BOT_IMG = "angular.svg";
-const PERSON_IMG = "duck.svg";
-const BOT_NAME = "BOT";
-const PERSON_NAME = "User";
 
-document.getElementById("chatgptbtn").addEventListener("click", async () => {
-  event.preventDefault();
-
-  console.log(apiKey)
-
+/**
+ * Implement the flow of the chatbot, and generate a response from GPT-Tutor to the student's question
+ */
+async function getTutorResponse() {
   const msgText = msgerInput.value;
   if (!msgText) return;
 
@@ -103,8 +125,7 @@ document.getElementById("chatgptbtn").addEventListener("click", async () => {
     window.alert("Please provide your problem description.");
     return;
   }
-
-  //get question's type
+  
   var type_prompt = "*Instructions*\n"
     + "- Please tell which type of coding question is the one provided below among:\n"
     + "  - Undesired output (Help student find the underlying problem that produces the undesired output)\n"
@@ -116,7 +137,9 @@ document.getElementById("chatgptbtn").addEventListener("click", async () => {
     + "Question: Only 9 of 17 test cases are accepted, why? You: N (since it's not getting AC)\n"
     + "----\n"
     + "*Question*";
-
+  
+  // Get question's type
+  // TODO: handle follow-up questions
   const type_response = requestChatGptApi(type_prompt + msgText);
 
   //針對不同type使用不同prompt
@@ -168,7 +191,8 @@ document.getElementById("chatgptbtn").addEventListener("click", async () => {
   }
   loading_finished();
   UpdateChatHistoryToDB();
-});
+} 
+
 
 /**
  * Send the engineered-prompt to the Chat GPT API and get the response
@@ -178,7 +202,7 @@ document.getElementById("chatgptbtn").addEventListener("click", async () => {
  * @returns {string} The response from the Chat GPT API
  */
 async function requestChatGptApi(message, tutorInstruction = ''){
-    const type = problem_type.value;
+    const type = problemType.value;
     console.log(type);
     var responseMessage = "";
     // console.log(message);
@@ -225,6 +249,7 @@ async function requestChatGptApi(message, tutorInstruction = ''){
     return responseMessage;
 }
 
+
 /**
  * Append message to the chat window
  * 
@@ -258,6 +283,7 @@ function appendMessage(name, img, side, text ,time) {
   return time;
 }
 
+
 /**
  * Append GPT-Tutor's response to the chat window 
  * 
@@ -271,23 +297,24 @@ function tutorResponse(response) {
     return ai_time;
 }
 
+
 // TODO: unclear what these two function does
 function addToHistory(role, content,time) {
     full_history.push({ role: role, content: content,time:time });
 }
+
 
 function addToFull_History(input, time, response, ai_time) {
     full_history.push({ role: 'user', content: input, time: time});
     full_history.push({ role: 'assistant', content: response, time : ai_time });
 }
 
-const data = { user_id: "waylon", type: problem_type.value, history: full_history };
 
 /** 
  * Save the chat history to a JSON file and post it to MongoDB server
 */
 function UpdateChatHistoryToDB() {
-  data.type = problem_type.value;
+  data.type = problemType.value;
   data.history = full_history;
   const jsonData = JSON.stringify(data, null, 2);
   console.log(JSON.parse(jsonData).user_id)
@@ -316,9 +343,11 @@ function formatDate(date) {
   return `${formattedDate} ${formattedTime}`;
 }
 
+
 function random(min, max) {
   return Math.floor(Math.random() * (max - min) + min);
 }
+
 
 /**
  * Show the loading animation
@@ -327,12 +356,14 @@ function loading_start(){
   document.querySelector("#loader").style.display = "block";
 }
 
+
 /**
  * Hide the loading animation
  */
 function loading_finished(){
   document.querySelector("#loader").style.display = "none";
 }
+
 
 window.addEventListener("load", async function() {
   const userId = prompt("Please enter your ID:");
@@ -341,6 +372,7 @@ window.addEventListener("load", async function() {
   retrieveChatHistory(data.user_id);
   loading_finished();
 });
+
 
 /** 
  *  Testing the Bing API
@@ -378,8 +410,6 @@ async function requestBingApi() {
 }
 
 
-const url = 'http://localhost:8888/';
-
 /**
  * Get the chat history from the server and display it on the chat window
  * 
@@ -397,7 +427,7 @@ async function retrieveChatHistory(id) {
   };
 
   axios
-    .post("http://localhost:8888/userhistory", payload, { headers })
+    .post(dbLocalHostUrl + "userhistory", payload, { headers })
     .then(response => {
       console.log(response.data.data);
       console.log(response.data.data.length);
@@ -426,6 +456,7 @@ async function retrieveChatHistory(id) {
 
 }
 
+
 /**
  * Post a json file to the server 
  *  
@@ -443,7 +474,7 @@ function postRequest(jsonData) {
   };
 
   axios
-    .post(url, payload, { headers })
+    .post(dbLocalHostUrl, payload, { headers })
     .then(response => {
       console.log(response.data);
     })
@@ -451,4 +482,33 @@ function postRequest(jsonData) {
       console.error('Error:', error);
     });
 }
+
+/////////////////////
+// Event listeners //
+/////////////////////
+
+getProblemDescriptionButton.addEventListener("click", getProblemDescription);
+
+userIdButton.addEventListener("click", changeUser);
+
+clearChatHistoryButton.addEventListener("click", clearChatHistory);
+chatgptButton.addEventListener("click", (event) => {
+  event.preventDefault();
+  getTutorResponse()
+});
+
+bingButton.addEventListener("click", (event) => {
+  event.preventDefault();
+  loading_start();
+  console.log("call bing~~");
+  requestBingApi();
+  loading_finished();
+});
+
+msgerInput.addEventListener("keydown", function(event) {
+  if (event.key === "Enter") {
+    event.preventDefault()
+    chatgptButton.click();
+  }
+})
 
