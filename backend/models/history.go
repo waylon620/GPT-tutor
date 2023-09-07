@@ -12,6 +12,7 @@ type History struct {
 	UserID string `json:"user_id" bson:"user_id"`
 	Type   string `json:"type" bson:"type"`
 	Chats  []Chat `json:"chats" bson:"chats"`
+	Problem string `json:"problem" bson:"problem"`
 }
 
 type Chat struct {
@@ -21,12 +22,48 @@ type Chat struct {
 }
 
 type HistoryService interface {
+	GetUserProblem(id string) (bool, string)
 	Search_chat(id string) (bool, []Chat)
 	Create_chat(his History) error
 	Insert_chat(id string, chats []Chat) error
+	UpdateUserProblem(id string, problem string) error
 	// Delete_db(id string) error
 
 }
+
+
+func (t *controllerOps) GetUserProblem(id string) (bool, string) {
+	c := t.Client.Database("Project").Collection("History")
+	log.Println(id)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	selector := bson.M{
+		"user_id": id,
+	}
+	u := &History{}
+	if err := c.FindOne(ctx, selector).Decode(u); err != nil {
+		return false, ""
+	}
+	// log.Println(u)
+	return true, u.Problem
+}
+
+func (s *controllerOps) UpdateUserProblem(id string, problem string) error {
+    c := s.Client.Database("Project").Collection("History")
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+
+    selector := bson.M{"user_id": id}
+    update := bson.M{"$set": bson.M{"problem": problem}}
+
+    _, err := c.UpdateOne(ctx, selector, update)
+    if err != nil {
+        return err
+    }
+
+    return nil
+}
+
 
 func (t *controllerOps) Search_chat(id string) (bool, []Chat) {
 	c := t.Client.Database("Project").Collection("History")
@@ -52,6 +89,7 @@ func (t *controllerOps) Create_chat(his History) error {
 		"user_id": his.UserID,
 		"type":    his.Type,
 		"chats":   his.Chats,
+		"problem": his.Problem,
 	}
 	if i, err := c.InsertOne(ctx, new); err != nil {
 		return err
@@ -61,6 +99,7 @@ func (t *controllerOps) Create_chat(his History) error {
 	}
 	// return nil
 }
+
 func (t *controllerOps) Insert_chat(id string, chats []Chat) error {
 	c := t.Client.Database("Project").Collection("History")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
