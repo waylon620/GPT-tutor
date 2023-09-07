@@ -27,7 +27,7 @@ const PERSON_IMG = "duck.svg";
 const BOT_NAME = "BOT";
 const PERSON_NAME = "User";
 
-const data = { user_id: "waylon", type: problemType.value, history: full_history };
+const data = { user_id: "waylon", type: problemType.value, history: full_history, problem: "" };
 
 const dbLocalHostUrl = 'http://localhost:8888/';
 
@@ -75,6 +75,9 @@ function getProblemDescription() {
   problemDescription = window.prompt("Enter the problem description:");
   if (problemDescription !== null) {
       console.log("User entered:", problemDescription);
+      data.problem = "*Problem Description*\n"+problemDescription;
+      console.log("in getProblemDescription")
+      console.log(full_history)
       // You can perform actions with the entered topic here
 
       const jsonData = { topic: problemDescription }; // Create a JSON object
@@ -95,11 +98,13 @@ function getProblemDescription() {
 /**
  * Ask the student to provide the user id then retrieve the chat history from the server
  */
-function changeUser() {
+function setUser() {
   const id = window.prompt("Enter your id:");
   if (id !== null) {
     data.user_id = id
     retrieveChatHistory(id)
+    retrieveUserProblem(id)
+    console.log("//////////in changeUser///////////////\n" + problemDescription)
   }
 }
 
@@ -215,10 +220,13 @@ async function requestChatGptApi(message, tutorInstruction = ''){
                     + "- Encourage thought-provoking questions to foster insight.\n"
                     + "- Foster interactivity with the student."}
                 , { role: 'system', content: tutorInstruction }
+                , { role: 'user', content: data.problem}
                 , { role: 'user', content: "this is my problem description: \n" + problemDescription }
                 , ...full_history.map(messageObj => ({ role: messageObj.role, content: messageObj.content }))
                 , { role: 'user', content: message }]
     };
+    console.log(message)
+
     const requestOptions = {
         method: 'POST',
         headers: {
@@ -320,7 +328,8 @@ function UpdateChatHistoryToDB() {
   console.log(JSON.parse(jsonData).user_id)
   console.log("save chat:")
   console.log(full_history)
-  postRequest(jsonData); 
+  postRequest(jsonData);
+  UpdateUserProblem(data.id);
 }
 
 
@@ -400,6 +409,60 @@ async function requestBingApi() {
   });
 }
 
+/**
+ * Get the problem description from the server
+ * 
+ * @param {String} id
+ * @returns {String} The problem description
+ */
+async function retrieveUserProblem(id) {
+  msgerChat.innerHTML = ''; // Clear the chat interface
+  full_history = [];
+  const payload = {
+    user_id: id,
+  };
+
+  const headers = {
+    'Content-Type': 'application/json'
+  };
+
+  axios
+    .post(dbLocalHostUrl + "userproblem", payload, { headers })
+    .then(response => {
+      console.log(response.data.data);
+      console.log(response.data.data.length);
+      console.log(problemDescription);
+      problemDescription = response.data.data;
+    })
+    .catch(error => {
+      console.error('Error getting problem description from db:', error);
+    });
+}
+
+/**
+ * Update the problem description to the server
+ * 
+ * @param {String} id
+ */
+async function UpdateUserProblem(id) {
+  const payload = {
+    user_id: id,
+    problem: problemDescription
+  };
+
+  console.log("in UpdateUserProblem")
+  console.log(problemDescription)
+  
+  const headers = {
+    'Content-Type': 'application/json'
+  };
+
+  axios
+    .post(dbLocalHostUrl + "updateproblem", payload, { headers })
+    .catch(error => {
+      console.error('Error updating problem description from db:', error);
+    });
+}
 
 /**
  * Get the chat history from the server and display it on the chat window
@@ -454,10 +517,12 @@ async function retrieveChatHistory(id) {
  * @param jsonData 
  */
 function postRequest(jsonData) {
+  console.log(JSON.parse(jsonData).problem)
   const payload = {
     user_id: JSON.parse(jsonData).user_id,
     type: JSON.parse(jsonData).type,
-    chats: JSON.parse(jsonData).history
+    chats: JSON.parse(jsonData).history,
+    problem: JSON.parse(jsonData).problem
   };
 
   const headers = {
@@ -480,7 +545,7 @@ function postRequest(jsonData) {
 
 getProblemDescriptionButton.addEventListener("click", getProblemDescription);
 
-userIdButton.addEventListener("click", changeUser);
+userIdButton.addEventListener("click", setUser);
 
 clearChatHistoryButton.addEventListener("click", clearChatHistory);
 chatgptButton.addEventListener("click", (event) => {
@@ -504,9 +569,8 @@ msgerInput.addEventListener("keydown", function(event) {
 })
 
 window.addEventListener("load", async function() {
-  const userId = prompt("Please enter your ID:");
   apiKey = await fetchAPIKey();
-  data.user_id = userId;
+  setUser();
   retrieveChatHistory(data.user_id);
   loading_finished();
 });
