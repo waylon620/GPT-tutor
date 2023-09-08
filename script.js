@@ -8,7 +8,7 @@ const msgerInput = _get(".msger-input");
 const msgerChat = _get(".msger-chat");
 const problemType = _get("#problem_type");
 const chatgptButton = _get("#chatgptbtn");
-const bingButton = _get("#bingbtn");
+// const bingButton = _get("#bingbtn");
 const clearChatHistoryButton = _get("#clearBtn");
 const getProblemDescriptionButton = _get("#open-input-btn")
 const userIdButton = _get("#userid-btn")
@@ -20,6 +20,7 @@ var apiKey = "";
 //紀錄使用者與系統對話內容以及時間
 var full_history = [];
 var problemDescription = "";
+var bing_reply = "";
 
 // Icons made by Freepik from www.flaticon.com
 const BOT_IMG = "angular.svg";
@@ -71,17 +72,23 @@ async function fetchAPIKey() {
 /**
  * Ask the student to provide the problem description
 */
-function getProblemDescription() {
+async function getProblemDescription() {
   problemDescription = window.prompt("Enter the problem description:");
   if (problemDescription !== null) {
       console.log("User entered:", problemDescription);
-      data.problem = "*Problem Description*\n"+problemDescription;
+      data.problem = "can you provide me 1.edge cases by constraints of the problem 2. rules or flow of the problem : \n\n"+problemDescription;
       console.log("in getProblemDescription")
       console.log(full_history)
       // You can perform actions with the entered topic here
 
       const jsonData = { topic: problemDescription }; // Create a JSON object
       const jsonBlob = new Blob([JSON.stringify(jsonData)], { type: "application/json" });
+
+      //provide problem description to bing
+      loading_start();
+      console.log("call bing~~");
+      await requestBingApi("*Problem Description*\n"+problemDescription);
+      loading_finished();
 
       // // Create a temporary anchor element to trigger the download
       // const downloadLink = document.createElement("a");
@@ -216,11 +223,12 @@ async function requestChatGptApi(message, tutorInstruction = ''){
         messages: [{ role: 'system', content: "*Role*\nBehave as a coding tutor with the following qualities:\n"
                     + "- Be inspiring, patient, and professional.\n"
                     + "- Use structured content and bullet points to enhance clarity.\n"
-                    + "- Avoid providing modified code or direct answers.\n"
+                    + "- DO NOT provide ANY modified code or direct answers.\n"
                     + "- Encourage thought-provoking questions to foster insight.\n"
                     + "- Foster interactivity with the student."}
                 , { role: 'system', content: tutorInstruction }
                 , { role: 'user', content: data.problem}
+                , { role: 'user', content: bing_reply}
                 , { role: 'user', content: "this is my problem description: \n" + problemDescription }
                 , ...full_history.map(messageObj => ({ role: messageObj.role, content: messageObj.content }))
                 , { role: 'user', content: message }]
@@ -363,26 +371,32 @@ function random(min, max) {
  */
 function loading_start(){
   document.querySelector("#loader").style.display = "block";
+  msgerInput.setAttribute("disabled", "true");
+  chatgptButton.setAttribute("disabled", "true");
+  console.log("loading...");
 }
 
 
 /**
  * Hide the loading animation
- */
+*/
 function loading_finished(){
   document.querySelector("#loader").style.display = "none";
+  msgerInput.removeAttribute("disabled");
+  chatgptButton.removeAttribute("disabled");
+  console.log("loading end");
 }
 
 
 /** 
  *  Testing the Bing API
  */
-async function requestBingApi() {
-  const msgText = msgerInput.value;
-  if (!msgText) return;
-  var user_time = formatDate(new Date());
-  appendMessage(PERSON_NAME, PERSON_IMG, "right", msgText, user_time);
-  msgerInput.value = "";
+async function requestBingApi(input) {
+  // const msgText = msgerInput.value;
+  // if (!msgText) return;
+  // var user_time = formatDate(new Date());
+  // appendMessage(PERSON_NAME, PERSON_IMG, "right", msgText, user_time);
+  // msgerInput.value = "";
 
   await fetch('http://127.0.0.1:5000/bing', {
       method: 'POST',
@@ -390,7 +404,7 @@ async function requestBingApi() {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
       },
-      body: JSON.stringify({bingInput: msgText})
+      body: JSON.stringify({bingInput: input})
       // body: JSON.stringify({bingInput: "Hello, tell me what can you do"})
   })
   .then(response => {
@@ -400,9 +414,10 @@ async function requestBingApi() {
     return response.text();
   })
   .then(data => {
-    tutorResponse(JSON.parse(data).bingOutput.text);
-    addToFull_History(msgText, user_time, JSON.parse(data).bingOutput.text, formatDate(new Date()));
-    // console.log(data)
+    // tutorResponse(JSON.parse(data).bingOutput.text);
+    // addToFull_History(msgText, user_time, JSON.parse(data).bingOutput.text, formatDate(new Date()));
+    bing_reply = JSON.parse(data.bingOutput.text)
+    console.log(JSON.parse(data).bingOutput.text)
   })
   .catch(error => {
     console.error('There was a problem with the Fetch operation:', error);
@@ -553,13 +568,13 @@ chatgptButton.addEventListener("click", (event) => {
   getTutorResponse()
 });
 
-bingButton.addEventListener("click", (event) => {
-  event.preventDefault();
-  loading_start();
-  console.log("call bing~~");
-  requestBingApi();
-  loading_finished();
-});
+// bingButton.addEventListener("click", (event) => {
+//   event.preventDefault();
+//   loading_start();
+//   console.log("call bing~~");
+//   requestBingApi();
+//   loading_finished();
+// });
 
 msgerInput.addEventListener("keydown", function(event) {
   if (event.key === "Enter") {
