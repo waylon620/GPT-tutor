@@ -226,12 +226,12 @@ async function requestChatGptApi(message, tutorInstruction = ''){
                     + "- DO NOT provide ANY modified code or direct answers.\n"
                     + "- Encourage thought-provoking questions to foster insight.\n"
                     + "- Foster interactivity with the student."}
-                , { role: 'system', content: tutorInstruction }
-                , { role: 'user', content: data.problem}
-                , { role: 'user', content: bing_reply}
-                , { role: 'user', content: "this is my problem description: \n" + problemDescription }
-                , ...full_history.map(messageObj => ({ role: messageObj.role, content: messageObj.content }))
-                , { role: 'user', content: message }]
+                    , { role: 'system', content: tutorInstruction}
+                    , { role: 'user', content: data.problem}
+                    , { role: 'user', content: bing_reply}
+                    , { role: 'user', content: "this is my problem description: \n" + problemDescription }
+                    , ...full_history.map(messageObj => ({ role: messageObj.role, content: messageObj.content }))
+                    , { role: 'user', content: message }]
     };
     console.log(message)
 
