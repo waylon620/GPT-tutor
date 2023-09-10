@@ -24,10 +24,11 @@ var bing_reply = "";
 // Icons made by Freepik from www.flaticon.com
 const BOT_IMG = "angular.svg";
 const PERSON_IMG = "duck.svg";
-const BOT_NAME = "BOT";
+const BOT_NAME = "GPT-Tutor";
 const PERSON_NAME = "User";
 
-const studentData = { user_id: "waylon", type: problemType.value, history: full_history, problem: "" };
+// const studentData = { user_id: "waylon", type: problemType.value, history: full_history, problem: "" };
+const studentData = { user_id: "waylon", history: full_history, problem: "" };
 
 const dbLocalHostUrl = 'http://localhost:8888/';
 
@@ -136,7 +137,7 @@ function clearChatHistory() {
  */
 async function getTutorResponse() {
   console.log("in getTutorResponse")
-  loading_start();
+  // loading_start();
   const msgText = msgerInput.value;
   if (!msgText) return;
 
@@ -186,19 +187,19 @@ async function getTutorResponse() {
   }
 
   var time = formatDate(new Date());
-  var user_time = appendMessage(PERSON_NAME, PERSON_IMG, "right", msgText, time);
+  var user_time = appendMessage(studentData.user_id, PERSON_IMG, "right", msgText, time);
 
   msgerInput.value = "";
   try {
     const response = await requestChatGptApi(msgText, tutorInstruction);
-    // const response = await requestChatGptApi(msgText);
-    var ai_time = tutorResponse(response);
-    addToFull_History(msgText, user_time, response, ai_time);
+    // var ai_time = tutorResponse(response);
+
+    addToFull_History(msgText, user_time, response, formatDate(new Date()));
   } catch (error) {
     // Handle any errors that occur during the GPT_api call
     console.error(error);
   }
-  loading_finished();
+  // loading_finished();
   UpdateChatHistoryToDB();
 } 
 
@@ -210,56 +211,106 @@ async function getTutorResponse() {
  * @param {string} tutorInstruction
  * @returns {string} The response from the Chat GPT API
  */
-async function requestChatGptApi(message, tutorInstruction = ''){
-    // const type = problemType.value;
-    // console.log(type);
-    var responseMessage = "";
-    // console.log(message);
+async function requestChatGptApi(message, tutorInstruction = '') {
+  const pre = createMessageContainerHTML(BOT_NAME, BOT_IMG, 'left', formatDate(new Date()));
 
-    const requestBody = {
-        model: 'gpt-3.5-turbo',
-        messages: [{ role: 'system', content: "*Role*\nBehave as a coding tutor with the following qualities:\n"
-                    + "- Be inspiring, patient, and professional.\n"
-                    + "- Use structured content and bullet points to enhance clarity.\n"
-                    + "- Encourage thought-provoking questions to foster insight.\n"
-                    + "- Foster interactivity with the student."}
-                , { role: 'user', content: tutorInstruction }
-                , { role: 'system', content: "!!!DO NOT PROVIDE SOLUTION CODE TO THE STUDENT'S PROBLEM!!!"}
-                , { role: 'user', content: studentData.problem}
-                , { role: 'user', content: bing_reply}
-                , ...full_history.map(messageObj => ({ role: messageObj.role, content: messageObj.content }))
-                , { role: 'user', content: message }]
-    };
-    console.log("requestBody:\n" + requestBody)
+  let fullResponse = '';
 
-    const requestOptions = {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + apiKey 
-        },
-        body: JSON.stringify(requestBody)
-    };
-      
-    try {
-    const response = await fetch(
-        'https://api.openai.com/v1/chat/completions',
-        requestOptions
-    );
-    
+  const requestBody = {
+    model: 'gpt-3.5-turbo',
+    messages: [
+      {
+        role: 'system',
+        content: "*Role*\nBehave as a coding tutor with the following qualities:\n"
+          + "- Be inspiring, patient, and professional.\n"
+          + "- Use structured content and bullet points to enhance clarity.\n"
+          + "- Encourage thought-provoking questions to foster insight.\n"
+          + "- Foster interactivity with the student."
+      },
+      { role: 'user', content: tutorInstruction },
+      {
+        role: 'system',
+        content: "!!!DO NOT PROVIDE SOLUTION CODE TO THE STUDENT'S PROBLEM!!!"
+      },
+      { role: 'user', content: studentData.problem },
+      { role: 'user', content: bing_reply },
+      ...full_history.map(messageObj => ({ role: messageObj.role, content: messageObj.content })),
+      { role: 'user', content: message }
+    ],
+    stream: true,
+  };
+
+  const requestOptions = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + apiKey,
+    },
+    body: JSON.stringify(requestBody),
+  };
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', requestOptions);
+
     if (response.ok) {
-        const jsonResponse = await response.json();
-        responseMessage = jsonResponse.choices[0].message.content.trim();
-      } else {
+      const reader = response.body.getReader();
+      let result = await reader.read();
+
+      while (!result.done) {
+        const chunk = new TextDecoder().decode(result.value);
+        // const jsonResponse = JSON.parse(chunk); // Parse the JSON response
+
+        const lines = chunk.split('\n');
+        const parsedLines = lines
+          .map((line) => line.replace(/^data: /, "").trim())
+          .filter((line) => line !== "" && line !== "[DONE]")
+          .map((line) => JSON.parse(line));
+
+          
+        // Simulate typing effect for the response
+        for (const parsedLine of parsedLines) {
+          // console.log("parsedLine: ", parsedLine)
+          const { choices } = parsedLine;
+          const { delta } = choices[0];
+          const finish_reason = choices[0].finish_reason;
+          const { content } = delta;
+
+          if (finish_reason === "stop") {
+            break;
+          }
+
+          for (let i = 0; i < content.length; i++) {
+            fullResponse += content[i];
+            const htmlResponse = marked.parse(fullResponse);
+            pre.innerHTML = `<div class="markdown-block">${htmlResponse}</div>`;
+            msgerChat.scrollTop = msgerChat.scrollHeight;
+            await sleep(10); // Adjust typing speed here
+          }
+          await sleep(80); // Adjust typing speed here
+        }
+        
+        result = await reader.read();
+      }
+
+    } else {
         // Handle the error case
         console.log('Error:', response.statusText);
     }
-    } catch (error) {
-      // Handle the error case
-      console.log('Error:', error);
-    }
+  } catch (error) {
+    // Handle the error case
+    console.log('Error:', error);
+  } 
 
-    return responseMessage;
+  const htmlResponse = marked.parse(fullResponse);
+  pre.innerHTML = `<div class="markdown-block">${htmlResponse}</div>`;
+
+  return fullResponse; // Return the full response message
+}
+
+
+// Function to create a sleep/delay for typing effect
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 /**
@@ -323,6 +374,41 @@ async function getQuestionType(message){
     return responseMessage;
 }
 
+
+function createMessageContainerHTML(name, img, side, time) {
+  const msgHTML = `
+    <div class="msg ${side}-msg">
+    <div class="msg-icon">
+      <img src="${img}" alt="${name}'s Icon">
+    </div>
+
+      <div class="msg-bubble">
+        <div class="msg-info">
+          <div class="msg-info-name">${name}</div>
+          <div class="msg-info-time">${time}</div>
+        </div>
+
+        <div class="msg-text"><pre></pre></div>
+      </div>
+    </div>
+  `;
+
+  msgerChat.insertAdjacentHTML("beforeend", msgHTML);
+  msgerChat.scrollTop += 500;
+
+  const messageContainer = msgerChat.lastElementChild;
+  const pre = messageContainer.querySelector('.msg-text pre');
+
+  if (pre) {
+    return pre;
+  } else {
+    console.error("Failed to create message container");
+    return null;
+  }
+}
+
+
+
 /**
  * Append message to the chat window
  * 
@@ -334,24 +420,32 @@ async function getQuestionType(message){
  * @returns 
  */
 function appendMessage(name, img, side, text ,time) {
-  // var time = formatDate(new Date());
+  var time = formatDate(new Date());
   const msgHTML = `
     <div class="msg ${side}-msg">
-      <div class="msg-img" style="background-image: url(${img})"></div>
+    <div class="msg-icon">
+      <img src="${img}" alt="${name}'s Icon">
+    </div>
 
       <div class="msg-bubble">
         <div class="msg-info">
           <div class="msg-info-name">${name}</div>
           <div class="msg-info-time">${time}</div>
         </div>
-
         <div class="msg-text"><pre>${text}</pre></div>
       </div>
     </div>
   `;
-
+  
   msgerChat.insertAdjacentHTML("beforeend", msgHTML);
   msgerChat.scrollTop += 500;
+  
+  if (name == BOT_NAME) {
+    const messageContainer = msgerChat.lastElementChild;
+    const pre = messageContainer.querySelector('.msg-text pre');
+    const htmlResponse = marked.parse(text);
+    pre.innerHTML = `<div class="markdown-block">${htmlResponse}</div>`;
+  }
 
   return time;
 }
@@ -365,7 +459,8 @@ function appendMessage(name, img, side, text ,time) {
  */
 function tutorResponse(response) {
     var time = formatDate(new Date());
-    var ai_time = appendMessage(BOT_NAME, BOT_IMG, "left", response, time);
+    // var ai_time = appendMessage(BOT_NAME, BOT_IMG, "left", response, time);
+
     // console.log("response", response)
     return ai_time;
 }
@@ -387,7 +482,7 @@ function addToFull_History(input, time, response, ai_time) {
  * Save the chat history to a JSON file and post it to MongoDB server
 */
 async function UpdateChatHistoryToDB() {
-  studentData.type = problemType.value;
+  // studentData.type = problemType.value;
   studentData.history = full_history;
   const jsonData = JSON.stringify(studentData, null, 2);
   // console.log(JSON.parse(jsonData).user_id)
@@ -522,8 +617,8 @@ async function UpdateUserProblem(id) {
     problem: studentData.problem
   };
 
-  console.log("UpdateUserProblem to:")
-  console.log(studentData.problem)
+  // console.log("UpdateUserProblem to:")
+  // console.log(studentData.problem)
   
   const headers = {
     'Content-Type': 'application/json'
@@ -569,8 +664,8 @@ async function retrieveChatHistory(id) {
           // 使用 role、content、time 進行復原
           // 你可以呼叫你的 appendMessage 函數來顯示訊息
           // 例如：
-          if(role == "assistant" || role == "system")  appendMessage(role, BOT_IMG, "left",content, time);
-          else appendMessage(role,PERSON_IMG,"right" ,content, time);
+          if(role == "assistant" || role == "system")  appendMessage(BOT_NAME, BOT_IMG, "left",content, time);
+          else appendMessage(studentData.user_id, PERSON_IMG ,"right" ,content, time);
           addToHistory(role,content,time);
         }
       }
@@ -588,7 +683,7 @@ async function retrieveChatHistory(id) {
  * @param jsonData 
  */
 function postRequest(jsonData) {
-  console.log("POST:\n" + JSON.parse(jsonData).problem);
+  // console.log("POST:\n" + JSON.parse(jsonData).problem);
   const payload = {
     user_id: JSON.parse(jsonData).user_id,
     type: JSON.parse(jsonData).type,
