@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 
@@ -29,5 +30,6 @@ func main() {
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatalf("Failed to listen for http server, %s\n", err)
 	}
+	fmt.Printf("%v", server.Addr)
 	log.Print("start serving")
 }

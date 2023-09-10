@@ -3,15 +3,15 @@
 ///////////////////////////
 
 // Dom elements
-const msgerForm = _get(".msger-inputarea");
-const msgerInput = _get(".msger-input");
-const msgerChat = _get(".msger-chat");
-const problemType = _get("#problem_type");
-const chatgptButton = _get("#chatgptbtn");
+const messageForm = _get(".message-input-area");
+const messageInput = _get(".message-input");
+const messageChat = _get(".message-chat");
+const messageSendButton = _get("#message-send-button");
+const clearChatHistoryButton = _get("#clear-button");
+const getProblemDescriptionButton = _get("#problem-input-button")
+const userIdButton = _get("#user-id-button")
+// const problemType = _get("#problem_type");
 // const bingButton = _get("#bingbtn");
-const clearChatHistoryButton = _get("#clearBtn");
-const getProblemDescriptionButton = _get("#open-input-btn")
-const userIdButton = _get("#userid-btn")
 
 // Path to the API key file
 const apiKeyURL = "API_KEY.txt";
@@ -27,8 +27,7 @@ const PERSON_IMG = "duck.svg";
 const BOT_NAME = "GPT-Tutor";
 const PERSON_NAME = "User";
 
-// const studentData = { user_id: "waylon", type: problemType.value, history: full_history, problem: "" };
-const studentData = { user_id: "waylon", history: full_history, problem: "" };
+const studentData = { user_id: "waylon", type: "", history: full_history, problem: "" };
 
 const dbLocalHostUrl = 'http://localhost:8888/';
 
@@ -60,7 +59,6 @@ async function fetchAPIKey() {
       throw new Error("Failed to fetch API key");
     }
     const apiKey = await response.text();
-    // console.log("API key:", apiKey.slice(0, 10));
     return apiKey.trim(); // Remove leading/trailing whitespace
   } catch (error) {
     console.error(error);
@@ -76,10 +74,12 @@ async function getProblemDescription() {
   studentData.problem = window.prompt("Enter the problem description:");
   if (studentData.problem !== null) {
       console.log("User entered:", studentData.problem);
-      // studentData.problem = "Can you provide me with 1.edge cases by constraints of the problem 2. rules or flow of the problem : \n\n"+studentData.problem;
-      const promptForBing = "*Instruction*\n"
-        + "Generate: 1.Edge cases with respect to the constraints of the problem 2. Detailed rules or flow of the problem\n"
-        + "*Problem description*\n"
+      const promptForBing = `*Instruction*
+        Generate: 
+        1.Edge cases with respect to the constraints of the problem 
+        2. Detailed rules or flow of the problem
+
+        *Problem description*\n`
         +studentData.problem;
       // console.log("in getProblemDescription")
       // console.log(full_history)
@@ -126,7 +126,7 @@ function setUser() {
  * Clear the chat history
  */
 function clearChatHistory() {
-  msgerChat.innerHTML = ''; // Clear the chat interface
+  messageChat.innerHTML = ''; // Clear the chat interface
   full_history = [];
   UpdateChatHistoryToDB();
 }
@@ -138,7 +138,7 @@ function clearChatHistory() {
 async function getTutorResponse() {
   console.log("in getTutorResponse")
   // loading_start();
-  const msgText = msgerInput.value;
+  const msgText = messageInput.value;
   if (!msgText) return;
 
   if(studentData.problem == "") {
@@ -153,43 +153,43 @@ async function getTutorResponse() {
   var tutorInstruction = "";
 
   // 針對不同type使用不同prompt
-  if (questionType == "U"){
-    tutorInstruction = "*Instruction*" +
-    "The goal is to provide a hint to help the student diagnose why their code is producing an undesired output with the input provided by the student. Below are the detailed steps you need to follow:\n" 
-    + "1. Ask the student about the intention of the code they provide if the student didn't say it in the question. e.g. \"Can you explain how you think your code should work? \" \n"
-    + "2. You can ask the student to add `print(...)` in the code and specify the position and what to print. Or you can provide test cases which are different from those provided by the student, and then ask the student to run the code for you to help debug.\n"
-    + "3. After those, pose thought-provoking questions, and list out any potential pitfalls or logical errors that might be causing the unexpected output.\n"
-    + "4. The problem that can be fixed with less code or is easier to fix should be addressed first."
-  }
-  else if (questionType == "H"){
-    tutorInstruction = "*Instruction*\n  Provide hints for the student to solve their problem, and below are the steps you must follow:\n"
-    + "1. Explain the thing that the student is asking with easy-to-understand language and examples if possible.\n"
-    + "2. List out 3 different strategies including what algorithm, data structure … to use, then provide pros and cons for each one of them for the student's reference.\n"
-    + "3. Choose one strategy listed above, then give a high-level step by step guidance for example.\n"
-    + "4. Remind the student to take care of some potential pitfalls.\n"
-    + "5. List out the keywords for coding knowledge that may be applied to the student's question or this coding problem.\n"
-  }
-  else if (questionType == "C"){
-    tutorInstruction = "*Instruction*\n  The goal is to provide a hint to help the student diagnose why their code is having a compile error. Below are the detailed steps you need to follow:\n"
-    + "1. Explain the error message provided by the compiler.\n"
-    + "2. Review syntax, variable names, and data types, and if that's the reason causing the compile error, tell the student to check for it with questions.\n"
-    + "3. Pose thought-provoking questions, and list out any potential pitfalls or logical errors that might be causing the compile error."
-  }
-  else if (questionType == "N"){
-    tutorInstruction = "*Instruction*\n  Provide a hint to help the student optimize their code and address issues causing it not to get accepted on the online judge. Below are the detailed steps you need to follow:\n"
-    + "1. If there's a time limit exceeded (TLE), then assume the logic of the code is correct and provide hints to help the student optimize the efficiency of the code, and then skip the below steps. \n"
-    + "2. If there's no TLE, then for each small part of the code provided by the student. Imagine different scenarios that might cause it to fail on the online judge. Consider the logic, edge cases, and potential bottlenecks in the algorithm. \n"
-    + "3. Encourage the student to review the problem requirements and trace the code to ensure it meets those requirements.\n"
-    + "4. You can ask the student to add `print(...)` in the code and specify the position and what to print. Or you can provide test cases which are different from those provided by the student, and then ask the student to run the code for you to help debug."
-  }
-  else {
+  if (questionType == "U") {
+    tutorInstruction = `*Instruction*
+  The goal is to provide a hint to help the student diagnose why their code is producing an undesired output with the input provided by the student. Below are the detailed steps you need to follow:
+  1. Ask the student about the intention of the code they provide if the student didn't say it in the question. e.g. "Can you explain how you think your code should work? "
+  2. You can ask the student to add \`print(...)\` in the code and specify the position and what to print. Or you can provide test cases which are different from those provided by the student, and then ask the student to run the code for you to help debug.
+  3. After those, pose thought-provoking questions, and list out any potential pitfalls or logical errors that might be causing the unexpected output.
+  4. The problem that can be fixed with less code or is easier to fix should be addressed first.`;
+  } else if (questionType == "H") {
+    tutorInstruction = `*Instruction*
+  Provide hints for the student to solve their problem, and below are the steps you must follow:
+  1. Explain the thing that the student is asking with easy-to-understand language and examples if possible.
+  2. List out 3 different strategies including what algorithm, data structure … to use, then provide pros and cons for each one of them for the student's reference.
+  3. Choose one strategy listed above, then give a high-level step-by-step guidance, for example.
+  4. Remind the student to take care of some potential pitfalls.
+  5. List out the keywords for coding knowledge that may be applied to the student's question or this coding problem.`;
+  } else if (questionType == "C") {
+    tutorInstruction = `*Instruction*
+  The goal is to provide a hint to help the student diagnose why their code is having a compile error. Below are the detailed steps you need to follow:
+  1. Explain the error message provided by the compiler.
+  2. Review syntax, variable names, and data types, and if that's the reason causing the compile error, tell the student to check for it with questions.
+  3. Pose thought-provoking questions, and list out any potential pitfalls or logical errors that might be causing the compile error.`;
+  } else if (questionType == "N") {
+    tutorInstruction = `*Instruction*
+  Provide a hint to help the student optimize their code and address issues causing it not to get accepted on the online judge. Below are the detailed steps you need to follow:
+  1. If there's a time limit exceeded (TLE), then assume the logic of the code is correct and provide hints to help the student optimize the efficiency of the code, and then skip the below steps.
+  2. If there's no TLE, then for each small part of the code provided by the student. Imagine different scenarios that might cause it to fail on the online judge. Consider the logic, edge cases, and potential bottlenecks in the algorithm.
+  3. Encourage the student to review the problem requirements and trace the code to ensure it meets those requirements.
+  4. You can ask the student to add \`print(...)\` in the code and specify the position and what to print. Or you can provide test cases which are different from those provided by the student, and then ask the student to run the code for you to help debug.`;
+  } else {
     // Universal prompt (default)
   }
+
 
   var time = formatDate(new Date());
   var user_time = appendMessage(studentData.user_id, PERSON_IMG, "right", msgText, time);
 
-  msgerInput.value = "";
+  messageInput.value = "";
   try {
     const response = await requestChatGptApi(msgText, tutorInstruction);
     // var ai_time = tutorResponse(response);
@@ -221,11 +221,13 @@ async function requestChatGptApi(message, tutorInstruction = '') {
     messages: [
       {
         role: 'system',
-        content: "*Role*\nBehave as a coding tutor with the following qualities:\n"
-          + "- Be inspiring, patient, and professional.\n"
-          + "- Use structured content and bullet points to enhance clarity.\n"
-          + "- Encourage thought-provoking questions to foster insight.\n"
-          + "- Foster interactivity with the student."
+        content: `*Role*
+        Behave as a coding tutor with the following qualities:
+        - Be inspiring, patient, and professional.
+        - Use structured content and bullet points to enhance clarity.
+        - Encourage thought-provoking questions to foster insight.
+        - Don't give too detailed step-by-step guides if they are not asked for.
+        - Decide how much information to provide based on the student's level of understanding.`
       },
       { role: 'user', content: tutorInstruction },
       {
@@ -285,12 +287,12 @@ async function requestChatGptApi(message, tutorInstruction = '') {
             pre.innerHTML = `<div class="markdown-block">${htmlResponse}</div>`;
             // console.log("msgerChat.scrollTop: ", msgerChat.scrollTop)
             // console.log("msgerChat.scrollHeight: ", msgerChat.scrollHeight)
-            if (msgerChat.scrollTop + 600 >= msgerChat.scrollHeight) {
-              msgerChat.scrollTop = msgerChat.scrollHeight;
+            if (messageChat.scrollTop + 600 >= messageChat.scrollHeight) {
+              messageChat.scrollTop = messageChat.scrollHeight;
             }
-            await sleep(15); // Adjust typing speed here
+            // await sleep(5); // Adjust typing speed here
           }
-          await sleep(70); // Adjust typing speed here
+          // await sleep(30); // Adjust typing speed here
         }
         
         result = await reader.read();
@@ -326,17 +328,19 @@ function sleep(ms) {
  */
 async function getQuestionType(message){
     
-    var typePrompt = "*Instructions*\n"
-    + "- Please tell which type of coding question is the one provided below among:\n"
-    + "  - Undesired output (Help student find the underlying problem that produces the undesired output)\n"
-    + "  - Hint (Give student good guidance that is thought-provoking, and provide related concepts)\n"
-    + "  - Compile error (Help student find bugs in the code and needed knowledge related to the error message)\n"
-    + "  - Not getting AC (Help student find the underlying problem that might lead to not passing all the test cases on the online judge system)\n"
-    + "!!!Only contain the first character of the name of that type in your response!!!\n"
-    + "e.g. Question: Why is the code having a compile error? You: C (since it's a compile error)\n"
-    + "Question: Only 9 of 17 test cases are accepted, why? You: N (since it's not getting AC)\n"
-    + "----\n"
-    + "*Question*\n";
+    var typePrompt = 
+    `*Instructions*
+    - Please tell which type of coding question is the one provided below among:
+    - Undesired output (Help student find the underlying problem that produces the undesired output)
+    - Hint (Give student good guidance that is thought-provoking, and provide related concepts)
+    - Compile error (Help student find bugs in the code and needed knowledge related to the error message)
+    - Not getting AC (Help student find the underlying problem that might lead to not passing all the test cases on the online judge system)
+    !!!Only contain the first character of the name of that type in your response!!!
+    e.g. Question: Why is the code having a compile error? You: C (since it's a compile error)
+    Question: Only 9 of 17 test cases are accepted, why? You: N (since it's not getting AC)
+    ----
+    *Question*`;
+
 
     var responseMessage = "";
     const requestBody = {
@@ -381,27 +385,27 @@ async function getQuestionType(message){
 
 function createMessageContainerHTML(name, img, side, time) {
   const msgHTML = `
-    <div class="msg ${side}-msg">
-    <div class="msg-icon">
+    <div class="message ${side}-message">
+    <div class="message-icon">
       <img src="${img}" alt="${name}'s Icon">
     </div>
 
-      <div class="msg-bubble">
-        <div class="msg-info">
-          <div class="msg-info-name">${name}</div>
-          <div class="msg-info-time">${time}</div>
+      <div class="message-bubble">
+        <div class="message-info">
+          <div class="message-info-name">${name}</div>
+          <div class="message-info-time">${time}</div>
         </div>
 
-        <div class="msg-text"><pre></pre></div>
+        <div class="message-text"><pre></pre></div>
       </div>
     </div>
   `;
 
-  msgerChat.insertAdjacentHTML("beforeend", msgHTML);
-  msgerChat.scrollTop += 500;
+  messageChat.insertAdjacentHTML("beforeend", msgHTML);
+  messageChat.scrollTop += 500;
 
-  const messageContainer = msgerChat.lastElementChild;
-  const pre = messageContainer.querySelector('.msg-text pre');
+  const messageContainer = messageChat.lastElementChild;
+  const pre = messageContainer.querySelector('.message-text pre');
 
   if (pre) {
     return pre;
@@ -426,27 +430,27 @@ function createMessageContainerHTML(name, img, side, time) {
 function appendMessage(name, img, side, text ,time) {
   var time = formatDate(new Date());
   const msgHTML = `
-    <div class="msg ${side}-msg">
-    <div class="msg-icon">
+    <div class="message ${side}-message">
+    <div class="message-icon">
       <img src="${img}" alt="${name}'s Icon">
     </div>
 
-      <div class="msg-bubble">
-        <div class="msg-info">
-          <div class="msg-info-name">${name}</div>
-          <div class="msg-info-time">${time}</div>
+      <div class="message-bubble">
+        <div class="message-info">
+          <div class="message-info-name">${name}</div>
+          <div class="message-info-time">${time}</div>
         </div>
-        <div class="msg-text"><pre>${text}</pre></div>
+        <div class="message-text"><pre>${text}</pre></div>
       </div>
     </div>
   `;
   
-  msgerChat.insertAdjacentHTML("beforeend", msgHTML);
-  msgerChat.scrollTop += 500;
+  messageChat.insertAdjacentHTML("beforeend", msgHTML);
+  messageChat.scrollTop += 500;
   
   if (name == BOT_NAME) {
-    const messageContainer = msgerChat.lastElementChild;
-    const pre = messageContainer.querySelector('.msg-text pre');
+    const messageContainer = messageChat.lastElementChild;
+    const pre = messageContainer.querySelector('.message-text pre');
     const htmlResponse = marked.parse(text);
     pre.innerHTML = `<div class="markdown-block">${htmlResponse}</div>`;
   }
@@ -527,8 +531,8 @@ function random(min, max) {
  */
 function loading_start(){
   document.querySelector("#loader").style.display = "block";
-  msgerInput.setAttribute("disabled", "true");
-  chatgptButton.setAttribute("disabled", "true");
+  messageInput.setAttribute("disabled", "true");
+  messageSendButton.setAttribute("disabled", "true");
   console.log("loading...");
 }
 
@@ -538,8 +542,8 @@ function loading_start(){
 */
 function loading_finished(){
   document.querySelector("#loader").style.display = "none";
-  msgerInput.removeAttribute("disabled");
-  chatgptButton.removeAttribute("disabled");
+  messageInput.removeAttribute("disabled");
+  messageSendButton.removeAttribute("disabled");
   console.log("loading end");
 }
 
@@ -547,15 +551,7 @@ function loading_finished(){
 /** 
  *  Testing the Bing API
  */
-async function requestBingApi(input) {
-  // const msgText = msgerInput.value;
-  // if (!msgText) return;
-  // var user_time = formatDate(new Date());
-  // appendMessage(PERSON_NAME, PERSON_IMG, "right", msgText, user_time);
-  // msgerInput.value = "";
-
-  // console.log("requestBingApi input: \n" + input)
-
+async function requestBingApi(input) {  
   await fetch('http://127.0.0.1:5000/bing', {
       method: 'POST',
       headers: {
@@ -563,7 +559,6 @@ async function requestBingApi(input) {
           'Accept': 'application/json'
       },
       body: JSON.stringify({bingInput: input})
-      // body: JSON.stringify({bingInput: "Hello, tell me what can you do"})
   })
   .then(response => {
     if (!response.ok) {
@@ -572,8 +567,6 @@ async function requestBingApi(input) {
     return response.text();
   })
   .then(data => {
-    // tutorResponse(JSON.parse(data).bingOutput.text);
-    // addToFull_History(msgText, user_time, JSON.parse(data).bingOutput.text, formatDate(new Date()));
     console.log("bing reply: \n" + JSON.parse(data).bingOutput.text)
     bing_reply = JSON.parse(data).bingOutput.text
   })
@@ -589,7 +582,6 @@ async function requestBingApi(input) {
  * @returns {String} The problem description
  */
 async function retrieveUserProblem(id) {
-  // msgerChat.innerHTML = ''; // Clear the chat interface
   full_history = [];
   const payload = {
     user_id: id,
@@ -641,7 +633,7 @@ async function UpdateUserProblem(id) {
  * @param {String} id 
  */
 async function retrieveChatHistory(id) {
-  msgerChat.innerHTML = ''; // Clear the chat interface
+  messageChat.innerHTML = ''; // Clear the chat interface
   full_history = [];
   const payload = {
     user_id: id,
@@ -657,7 +649,7 @@ async function retrieveChatHistory(id) {
       // console.log(response.data.data.length);
       if(response.data.data.length > 0)
       {
-        msgerChat.innerHTML = ''; // Clear the chat interface
+        messageChat.innerHTML = ''; // Clear the chat interface
         full_history = [];
         // 循環遍歷每一個元素，進行復原
         for (const item of response.data.data) {
@@ -668,8 +660,11 @@ async function retrieveChatHistory(id) {
           // 使用 role、content、time 進行復原
           // 你可以呼叫你的 appendMessage 函數來顯示訊息
           // 例如：
-          if(role == "assistant" || role == "system")  appendMessage(BOT_NAME, BOT_IMG, "left",content, time);
-          else appendMessage(studentData.user_id, PERSON_IMG ,"right" ,content, time);
+          if(role == "assistant" || role == "system") {
+            appendMessage(BOT_NAME, BOT_IMG, "left",content, time);
+          } else {
+            appendMessage(studentData.user_id, PERSON_IMG ,"right" ,content, time);
+          }
           addToHistory(role,content,time);
         }
       }
@@ -677,7 +672,6 @@ async function retrieveChatHistory(id) {
     .catch(error => {
       console.error('Error:', error);
     });
-
 }
 
 
@@ -721,9 +715,9 @@ userIdButton.addEventListener("click", setUser);
 
 clearChatHistoryButton.addEventListener("click", clearChatHistory);
 
-chatgptButton.addEventListener("click", (event) => {
+messageSendButton.addEventListener("click", (event) => {
   event.preventDefault();
-  msgerChat.scrollTop = msgerChat.scrollHeight;
+  messageChat.scrollTop = messageChat.scrollHeight;
   getTutorResponse()
 });
 
@@ -735,10 +729,10 @@ chatgptButton.addEventListener("click", (event) => {
 //   loading_finished();
 // });
 
-msgerInput.addEventListener("keydown", function(event) {
+messageInput.addEventListener("keydown", function(event) {
   if (event.key === "Enter") {
     event.preventDefault()
-    chatgptButton.click();
+    messageSendButton.click();
   }
 })
 

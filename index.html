@@ -8,70 +8,70 @@
 </head>
 <body>
     <div id="loader" class="center"></div>
-    <section class="msger">
-        <header class="msger-header">
-          <div class="msger-header-title">
-            <i class="fas fa-comment-alt"></i>GPT-Tutor  
-            <!-- <select id="problem_type">
-                <option value="default">select problem type</option>
-                <option value="type1">Coding error</option>
-                <option value="type2">Problem solving tips</option>
-                <option value="type3">How to get AC</option>
+    <section class="message-container">
+        <header class="message-header">
+          <div class="message-header-title">
+            <i class="fas fa-comment-alt"></i> GPT-Tutor
+            <!-- <select id="problem-type">
+                <option value="default">Select Problem Type</option>
+                <option value="type1">Coding Error</option>
+                <option value="type2">Problem Solving Tips</option>
+                <option value="type3">How to Get AC</option>
             </select> -->
           </div>
-          <div class="msger-header-buttons">
-            <button id="open-input-btn">Problem</button>
-            <button id="userid-btn">User</button>
-            <button id="clearBtn" class="clearbtn">Clear</button>
+          <div class="message-header-buttons">
+            <button id="problem-input-button">Problem</button>
+            <button id="user-id-button">User</button>
+            <button id="clear-button" class="clear-button">Clear</button>
           </div>
-          <div class="msger-header-options">
+          <div class="message-header-options">
             <span><i class="fas fa-cog"></i></span>
           </div>
         </header>
       
-        <main class="msger-chat">
-          <!-- <div class="msg left-msg">
+        <main class="message-chat">
+          <!-- <div class="message left-message">
             <div
-             class="msg-img"
+             class="message-image"
              style="background-image: url(angular.svg)"
             ></div>
       
-            <div class="msg-bubble">
-              <div class="msg-info">
-                <div class="msg-info-name">BOT</div>
-                <div class="msg-info-time">12:45</div>
+            <div class="message-bubble">
+              <div class="message-info">
+                <div class="message-info-name">BOT</div>
+                <div class="message-info-time">12:45</div>
               </div>
       
-              <div class="msg-text">
+              <div class="message-text">
                 Hi, welcome to SimpleChat! Go ahead and send me a message. 😄
               </div>
             </div>
           </div> -->
       
-          <!-- <div class="msg right-msg">
+          <!-- <div class="message right-message">
             <div
-             class="msg-img"
+             class="message-image"
              style="background-image: url(duck.svg)"
             ></div>
       
-            <div class="msg-bubble">
-              <div class="msg-info">
-                <div class="msg-info-name">User</div>
-                <div class="msg-info-time">12:46</div>
+            <div class="message-bubble">
+              <div class="message-info">
+                <div class="message-info-name">User</div>
+                <div class="message-info-time">12:46</div>
               </div>
       
-              <div class="msg-text">
+              <div class="message-text">
                 You can change your name in JS section!
               </div>
             </div> -->
           </div>
         </main>
       
-        <form class="msger-inputarea">
-          <input type="text" class="msger-input" placeholder="Enter your message...">
-          <button id="chatgptbtn" type="submit" class="msger-send-btn">Send</button>
-          <!-- <button id="bingbtn" class="msger-send-btn">Bing</button> -->
-        </form>
+        <div class="message-input-area">
+          <input type="text" class="message-input" placeholder="Enter your message...">
+          <button id="message-send-button" type="button" class="message-send-button">Send</button>
+          <!-- <button id="bing-button" class="message-send-button">Bing</button> -->
+        </div>
       </section>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.2.1/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mongoose@7.4.3/dist/browser.umd.min.js"></script>
