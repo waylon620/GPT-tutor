@@ -92,19 +92,9 @@ async function getProblemDescription() {
 
       console.log("call bing~~");
       //provide problem description to bing and ask for edge cases and rules for ChatGPT's reference
-      // const success = await requestBingApi(promptForBing);
       await requestBingApi(promptForBing);
 
       loading_finished();
-
-      // // Create a temporary anchor element to trigger the download
-      // const downloadLink = document.createElement("a");
-      // downloadLink.href = URL.createObjectURL(jsonBlob);
-      // downloadLink.download = "user_problem.json"; // File name
-      // downloadLink.click();
-
-      // // Clean up
-      // URL.revokeObjectURL(downloadLink.href);
   }
 }
 
@@ -498,7 +488,6 @@ async function UpdateChatHistoryToDB() {
   // console.log("save chat:")
   // console.log(full_history)
   await postRequest(jsonData);
-  // await postRequest(studnet)
 }
 
 
@@ -602,31 +591,6 @@ async function retrieveUserProblem(id) {
     })
     .catch(error => {
       console.error('Error getting problem description from db:', error);
-    });
-}
-
-/**
- * Update the problem description to the server
- * 
- * @param {String} id
- */
-async function UpdateUserProblem(id) {
-  const payload = {
-    user_id: id,
-    problem: studentData.problem
-  };
-
-  // console.log("UpdateUserProblem to:")
-  // console.log(studentData.problem)
-  
-  const headers = {
-    'Content-Type': 'application/json'
-  };
-
-  axios
-    .post(dbLocalHostUrl + "updateproblem", payload, { headers })
-    .catch(error => {
-      console.error('Error updating problem description from db:', error);
     });
 }
 
