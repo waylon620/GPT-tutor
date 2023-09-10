@@ -283,10 +283,14 @@ async function requestChatGptApi(message, tutorInstruction = '') {
             fullResponse += content[i];
             const htmlResponse = marked.parse(fullResponse);
             pre.innerHTML = `<div class="markdown-block">${htmlResponse}</div>`;
-            msgerChat.scrollTop = msgerChat.scrollHeight;
-            await sleep(10); // Adjust typing speed here
+            // console.log("msgerChat.scrollTop: ", msgerChat.scrollTop)
+            // console.log("msgerChat.scrollHeight: ", msgerChat.scrollHeight)
+            if (msgerChat.scrollTop + 600 >= msgerChat.scrollHeight) {
+              msgerChat.scrollTop = msgerChat.scrollHeight;
+            }
+            await sleep(15); // Adjust typing speed here
           }
-          await sleep(80); // Adjust typing speed here
+          await sleep(70); // Adjust typing speed here
         }
         
         result = await reader.read();
@@ -719,6 +723,7 @@ clearChatHistoryButton.addEventListener("click", clearChatHistory);
 
 chatgptButton.addEventListener("click", (event) => {
   event.preventDefault();
+  msgerChat.scrollTop = msgerChat.scrollHeight;
   getTutorResponse()
 });
 
