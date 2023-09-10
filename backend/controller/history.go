@@ -26,6 +26,23 @@ func (ops *BaseController) GetHistory(c *gin.Context) {
 	}
 }
 
+func (ops *BaseController) GetUserProblem(c *gin.Context) {
+	var request models.History
+	log.Printf("%v", c.Request)
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON data"})
+		return
+	}
+	log.Println("Valid JSON data")
+	ok, problem := ops.Service.GetUserProblem(request.UserID)
+	if ok {
+		HandleSucccessResponse(c, "", problem)
+		return
+	} else {
+		HandleFailedResponse(c, http.StatusNotFound, fmt.Errorf("user %s not found", request.UserID))
+	}
+}
+
 func (ops *BaseController) PostHistory(c *gin.Context) {
 	var request models.History
 	if err := c.ShouldBindJSON(&request); err != nil {
