@@ -3,15 +3,15 @@
 ///////////////////////////
 
 // Dom elements
-const msgerForm = _get(".msger-inputarea");
-const msgerInput = _get(".msger-input");
-const msgerChat = _get(".msger-chat");
-const problemType = _get("#problem_type");
-const chatgptButton = _get("#chatgptbtn");
+const messageForm = _get(".message-input-area");
+const messageInput = _get(".message-input");
+const messageChat = _get(".message-chat");
+const messageSendButton = _get("#message-send-button");
+const clearChatHistoryButton = _get("#clear-button");
+const getProblemDescriptionButton = _get("#problem-input-button")
+const userIdButton = _get("#user-id-button")
+// const problemType = _get("#problem_type");
 // const bingButton = _get("#bingbtn");
-const clearChatHistoryButton = _get("#clearBtn");
-const getProblemDescriptionButton = _get("#open-input-btn")
-const userIdButton = _get("#userid-btn")
 
 // Path to the API key file
 const apiKeyURL = "API_KEY.txt";
@@ -126,7 +126,7 @@ function setUser() {
  * Clear the chat history
  */
 function clearChatHistory() {
-  msgerChat.innerHTML = ''; // Clear the chat interface
+  messageChat.innerHTML = ''; // Clear the chat interface
   full_history = [];
   UpdateChatHistoryToDB();
 }
@@ -138,7 +138,7 @@ function clearChatHistory() {
 async function getTutorResponse() {
   console.log("in getTutorResponse")
   // loading_start();
-  const msgText = msgerInput.value;
+  const msgText = messageInput.value;
   if (!msgText) return;
 
   if(studentData.problem == "") {
@@ -189,7 +189,7 @@ async function getTutorResponse() {
   var time = formatDate(new Date());
   var user_time = appendMessage(studentData.user_id, PERSON_IMG, "right", msgText, time);
 
-  msgerInput.value = "";
+  messageInput.value = "";
   try {
     const response = await requestChatGptApi(msgText, tutorInstruction);
     // var ai_time = tutorResponse(response);
@@ -225,7 +225,8 @@ async function requestChatGptApi(message, tutorInstruction = '') {
           + "- Be inspiring, patient, and professional.\n"
           + "- Use structured content and bullet points to enhance clarity.\n"
           + "- Encourage thought-provoking questions to foster insight.\n"
-          + "- Foster interactivity with the student."
+          + "- Don't give too detailed steps-by-steps guide if it is not asked.\n"
+          + "- Decide how much information to provide based on the student's level of understanding.\n"
       },
       { role: 'user', content: tutorInstruction },
       {
@@ -285,8 +286,8 @@ async function requestChatGptApi(message, tutorInstruction = '') {
             pre.innerHTML = `<div class="markdown-block">${htmlResponse}</div>`;
             // console.log("msgerChat.scrollTop: ", msgerChat.scrollTop)
             // console.log("msgerChat.scrollHeight: ", msgerChat.scrollHeight)
-            if (msgerChat.scrollTop + 600 >= msgerChat.scrollHeight) {
-              msgerChat.scrollTop = msgerChat.scrollHeight;
+            if (messageChat.scrollTop + 600 >= messageChat.scrollHeight) {
+              messageChat.scrollTop = messageChat.scrollHeight;
             }
             await sleep(15); // Adjust typing speed here
           }
@@ -381,27 +382,27 @@ async function getQuestionType(message){
 
 function createMessageContainerHTML(name, img, side, time) {
   const msgHTML = `
-    <div class="msg ${side}-msg">
-    <div class="msg-icon">
+    <div class="message ${side}-message">
+    <div class="message-icon">
       <img src="${img}" alt="${name}'s Icon">
     </div>
 
-      <div class="msg-bubble">
-        <div class="msg-info">
-          <div class="msg-info-name">${name}</div>
-          <div class="msg-info-time">${time}</div>
+      <div class="message-bubble">
+        <div class="message-info">
+          <div class="message-info-name">${name}</div>
+          <div class="message-info-time">${time}</div>
         </div>
 
-        <div class="msg-text"><pre></pre></div>
+        <div class="message-text"><pre></pre></div>
       </div>
     </div>
   `;
 
-  msgerChat.insertAdjacentHTML("beforeend", msgHTML);
-  msgerChat.scrollTop += 500;
+  messageChat.insertAdjacentHTML("beforeend", msgHTML);
+  messageChat.scrollTop += 500;
 
-  const messageContainer = msgerChat.lastElementChild;
-  const pre = messageContainer.querySelector('.msg-text pre');
+  const messageContainer = messageChat.lastElementChild;
+  const pre = messageContainer.querySelector('.message-text pre');
 
   if (pre) {
     return pre;
@@ -426,27 +427,27 @@ function createMessageContainerHTML(name, img, side, time) {
 function appendMessage(name, img, side, text ,time) {
   var time = formatDate(new Date());
   const msgHTML = `
-    <div class="msg ${side}-msg">
-    <div class="msg-icon">
+    <div class="message ${side}-message">
+    <div class="message-icon">
       <img src="${img}" alt="${name}'s Icon">
     </div>
 
-      <div class="msg-bubble">
-        <div class="msg-info">
-          <div class="msg-info-name">${name}</div>
-          <div class="msg-info-time">${time}</div>
+      <div class="message-bubble">
+        <div class="message-info">
+          <div class="message-info-name">${name}</div>
+          <div class="message-info-time">${time}</div>
         </div>
-        <div class="msg-text"><pre>${text}</pre></div>
+        <div class="message-text"><pre>${text}</pre></div>
       </div>
     </div>
   `;
   
-  msgerChat.insertAdjacentHTML("beforeend", msgHTML);
-  msgerChat.scrollTop += 500;
+  messageChat.insertAdjacentHTML("beforeend", msgHTML);
+  messageChat.scrollTop += 500;
   
   if (name == BOT_NAME) {
-    const messageContainer = msgerChat.lastElementChild;
-    const pre = messageContainer.querySelector('.msg-text pre');
+    const messageContainer = messageChat.lastElementChild;
+    const pre = messageContainer.querySelector('.message-text pre');
     const htmlResponse = marked.parse(text);
     pre.innerHTML = `<div class="markdown-block">${htmlResponse}</div>`;
   }
@@ -527,8 +528,8 @@ function random(min, max) {
  */
 function loading_start(){
   document.querySelector("#loader").style.display = "block";
-  msgerInput.setAttribute("disabled", "true");
-  chatgptButton.setAttribute("disabled", "true");
+  messageInput.setAttribute("disabled", "true");
+  messageSendButton.setAttribute("disabled", "true");
   console.log("loading...");
 }
 
@@ -538,8 +539,8 @@ function loading_start(){
 */
 function loading_finished(){
   document.querySelector("#loader").style.display = "none";
-  msgerInput.removeAttribute("disabled");
-  chatgptButton.removeAttribute("disabled");
+  messageInput.removeAttribute("disabled");
+  messageSendButton.removeAttribute("disabled");
   console.log("loading end");
 }
 
@@ -641,7 +642,7 @@ async function UpdateUserProblem(id) {
  * @param {String} id 
  */
 async function retrieveChatHistory(id) {
-  msgerChat.innerHTML = ''; // Clear the chat interface
+  messageChat.innerHTML = ''; // Clear the chat interface
   full_history = [];
   const payload = {
     user_id: id,
@@ -657,7 +658,7 @@ async function retrieveChatHistory(id) {
       // console.log(response.data.data.length);
       if(response.data.data.length > 0)
       {
-        msgerChat.innerHTML = ''; // Clear the chat interface
+        messageChat.innerHTML = ''; // Clear the chat interface
         full_history = [];
         // 循環遍歷每一個元素，進行復原
         for (const item of response.data.data) {
@@ -721,9 +722,9 @@ userIdButton.addEventListener("click", setUser);
 
 clearChatHistoryButton.addEventListener("click", clearChatHistory);
 
-chatgptButton.addEventListener("click", (event) => {
+messageSendButton.addEventListener("click", (event) => {
   event.preventDefault();
-  msgerChat.scrollTop = msgerChat.scrollHeight;
+  messageChat.scrollTop = messageChat.scrollHeight;
   getTutorResponse()
 });
 
@@ -735,10 +736,10 @@ chatgptButton.addEventListener("click", (event) => {
 //   loading_finished();
 // });
 
-msgerInput.addEventListener("keydown", function(event) {
+messageInput.addEventListener("keydown", function(event) {
   if (event.key === "Enter") {
     event.preventDefault()
-    chatgptButton.click();
+    messageSendButton.click();
   }
 })
 
