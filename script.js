@@ -92,7 +92,8 @@ async function getProblemDescription() {
 
       console.log("call bing~~");
       //provide problem description to bing and ask for edge cases and rules for ChatGPT's reference
-      requestBingApi(promptForBing);
+      // const success = await requestBingApi(promptForBing);
+      await requestBingApi(promptForBing);
 
       loading_finished();
 
@@ -497,7 +498,7 @@ async function UpdateChatHistoryToDB() {
   // console.log("save chat:")
   // console.log(full_history)
   await postRequest(jsonData);
-  await UpdateUserProblem(studentData.id);
+  // await postRequest(studnet)
 }
 
 
@@ -573,6 +574,8 @@ async function requestBingApi(input) {
   .catch(error => {
     console.error('There was a problem with the Fetch operation:', error);
   });
+  
+  // return true;
 }
 
 /**
@@ -709,6 +712,7 @@ function postRequest(jsonData) {
 
 getProblemDescriptionButton.addEventListener("click", async () => {
   getProblemDescription();
+  postRequest(JSON.stringify(studentData, null, 2));
 });
 
 userIdButton.addEventListener("click", setUser);
