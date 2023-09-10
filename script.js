@@ -290,9 +290,9 @@ async function requestChatGptApi(message, tutorInstruction = '') {
             if (messageChat.scrollTop + 600 >= messageChat.scrollHeight) {
               messageChat.scrollTop = messageChat.scrollHeight;
             }
-            await sleep(5); // Adjust typing speed here
+            // await sleep(5); // Adjust typing speed here
           }
-          await sleep(30); // Adjust typing speed here
+          // await sleep(30); // Adjust typing speed here
         }
         
         result = await reader.read();
