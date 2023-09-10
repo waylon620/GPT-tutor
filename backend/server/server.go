@@ -34,7 +34,7 @@ func NewServer(service models.Service) *http.Server {
 	}
 
 	return &http.Server{
-		Addr:    "localhost:8888",
+		Addr:    "0.0.0.0:8888",
 		Handler: srv.routes(),
 	}
 }
