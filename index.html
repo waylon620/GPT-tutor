@@ -11,31 +11,32 @@
     <section class="msger">
         <header class="msger-header">
           <div class="msger-header-title">
-            <i class="fas fa-comment-alt"></i> SimpleChat  
-            <select id="problem_type">
+            <i class="fas fa-comment-alt"></i>GPT-Tutor  
+            <!-- <select id="problem_type">
                 <option value="default">select problem type</option>
                 <option value="type1">Coding error</option>
                 <option value="type2">Problem solving tips</option>
                 <option value="type3">How to get AC</option>
-            </select>
+            </select> -->
           </div>
-          <button id="open-input-btn">Problem</button>
-          <button id="userid-btn">user_id</button>
-          <!-- <button id="downloadBtn" class="downloadbtn">Download Chat History</button> -->
-          <button id="clearBtn" class="clearbtn">Clear Chat</button>
+          <div class="msger-header-buttons">
+            <button id="open-input-btn">Problem</button>
+            <button id="userid-btn">User</button>
+            <button id="clearBtn" class="clearbtn">Clear</button>
+          </div>
           <div class="msger-header-options">
             <span><i class="fas fa-cog"></i></span>
           </div>
         </header>
       
         <main class="msger-chat">
-          <div class="msg left-msg">
+          <!-- <div class="msg left-msg">
             <div
              class="msg-img"
              style="background-image: url(angular.svg)"
             ></div>
       
-            <!-- <div class="msg-bubble">
+            <div class="msg-bubble">
               <div class="msg-info">
                 <div class="msg-info-name">BOT</div>
                 <div class="msg-info-time">12:45</div>
@@ -44,16 +45,16 @@
               <div class="msg-text">
                 Hi, welcome to SimpleChat! Go ahead and send me a message. 😄
               </div>
-            </div> -->
-          </div>
+            </div>
+          </div> -->
       
-          <div class="msg right-msg">
+          <!-- <div class="msg right-msg">
             <div
              class="msg-img"
              style="background-image: url(duck.svg)"
             ></div>
       
-            <!-- <div class="msg-bubble">
+            <div class="msg-bubble">
               <div class="msg-info">
                 <div class="msg-info-name">User</div>
                 <div class="msg-info-time">12:46</div>
@@ -74,6 +75,7 @@
       </section>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.2.1/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mongoose@7.4.3/dist/browser.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script type="module" src="./script.js"></script>
 
 </body>
