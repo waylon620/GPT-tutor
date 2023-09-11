@@ -29,8 +29,9 @@ func (srv *server) routes() http.Handler {
 
 	v1 := srv.router.Group("/")
 	v1.Use()
-	{	v1.POST("/userproblem", controller.GetUserProblem)
-		v1.POST("/userhistory", controller.GetHistory)
+	{	v1.POST("/user_problem", controller.GetUserProblem)
+		v1.POST("/user_history", controller.GetHistory)
+		v1.POST("/user_bing_reply", controller.BingReply)
 		v1.POST("/", controller.PostHistory)
 		v1.POST("/save_problem", controller.Save_problem)
 		v1.POST("/search_problem", controller.Search_problem)
