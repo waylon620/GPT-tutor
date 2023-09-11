@@ -76,8 +76,11 @@ async function getProblemDescription() {
       console.log("User entered:", studentData.problem);
       const promptForBing = `*Instruction*
         Generate: 
-        1.Edge cases with respect to the constraints of the problem 
+        1. Edge cases with respect to the constraints of the problem
         2. Detailed rules or flow of the problem
+        Note: 
+        1. please do NOT provide any code 
+        2. please make your response short and neat 
 
         *Problem description*\n`
         +studentData.problem;
@@ -92,7 +95,7 @@ async function getProblemDescription() {
 
       console.log("call bing~~");
       //provide problem description to bing and ask for edge cases and rules for ChatGPT's reference
-      requestBingApi(promptForBing);
+      await requestBingApi(promptForBing);
 
       loading_finished();
 
@@ -194,7 +197,10 @@ async function getTutorResponse() {
     const response = await requestChatGptApi(msgText, tutorInstruction);
     // var ai_time = tutorResponse(response);
 
-    addToFull_History(msgText, user_time, response, formatDate(new Date()));
+    // addToFull_History(msgText, user_time, response, formatDate(new Date()));
+    addToHistory('user', msgText, user_time);
+    addToHistory('assistant', response, formatDate(new Date()));
+
   } catch (error) {
     // Handle any errors that occur during the GPT_api call
     console.error(error);
@@ -459,45 +465,29 @@ function appendMessage(name, img, side, text ,time) {
 }
 
 
-/**
- * Append GPT-Tutor's response to the chat window 
- * 
- * @param {*} response 
- * @returns 
- */
-function tutorResponse(response) {
-    var time = formatDate(new Date());
-    // var ai_time = appendMessage(BOT_NAME, BOT_IMG, "left", response, time);
-
-    // console.log("response", response)
-    return ai_time;
-}
-
-
 // TODO: unclear what these two function does
 function addToHistory(role, content,time) {
     full_history.push({ role: role, content: content,time:time });
 }
 
 
-function addToFull_History(input, time, response, ai_time) {
-    full_history.push({ role: 'user', content: input, time: time});
-    full_history.push({ role: 'assistant', content: response, time : ai_time });
-}
+// function addToFull_History(input, time, response, ai_time) {
+//     full_history.push({ role: 'user', content: input, time: time});
+//     full_history.push({ role: 'assistant', content: response, time : ai_time });
+// }
 
 
 /** 
  * Save the chat history to a JSON file and post it to MongoDB server
 */
 async function UpdateChatHistoryToDB() {
-  // studentData.type = problemType.value;
   studentData.history = full_history;
   const jsonData = JSON.stringify(studentData, null, 2);
   // console.log(JSON.parse(jsonData).user_id)
   // console.log("save chat:")
   // console.log(full_history)
   await postRequest(jsonData);
-  await UpdateUserProblem(studentData.id);
+  // await UpdateUserProblem(studentData.id);
 }
 
 
