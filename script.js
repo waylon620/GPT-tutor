@@ -17,17 +17,19 @@ const userIdButton = _get("#user-id-button")
 const apiKeyURL = "API_KEY.txt";
 var apiKey = "";
 
-//紀錄使用者與系統對話內容以及時間
-var full_history = [];
-var bing_reply = "";
-
 // Icons made by Freepik from www.flaticon.com
 const BOT_IMG = "angular.svg";
 const PERSON_IMG = "duck.svg";
 const BOT_NAME = "GPT-Tutor";
 const PERSON_NAME = "User";
 
-const studentData = { user_id: "waylon", type: "", history: full_history, problem: "" };
+const studentData = { 
+  user_id: "waylon", 
+  type: "", 
+  history: [], 
+  problem: "", 
+  bing_reply: ""
+};
 
 const dbLocalHostUrl = 'http://localhost:8888/';
 
@@ -50,7 +52,7 @@ function _get(selector, root = document) {
 /**
  * Fetch the API key from the API_KEY.txt file
  * 
- * @returns {string} The API key
+ * @returns {Promise<string>} The API key
  */
 async function fetchAPIKey() {
   try {
@@ -72,7 +74,7 @@ async function fetchAPIKey() {
 */
 async function getProblemDescription() {
   studentData.problem = window.prompt("Enter the problem description:");
-  if (studentData.problem !== null) {
+  if (studentData.problem !== null && studentData.problem !== "") {
       console.log("User entered:", studentData.problem);
       const promptForBing = `*Instruction*
         Generate: 
@@ -102,13 +104,24 @@ async function getProblemDescription() {
 /**
  * Ask the student to provide the user id then retrieve the chat history from the server
  */
-function setUser() {
+async function setUser() {
   const id = window.prompt("Enter your id:");
   if (id !== null) {
     studentData.user_id = id
-    retrieveChatHistory(id)
-    retrieveUserProblem(id)
-    console.log("//////////in changeUser///////////////\n" + studentData.problem)
+    console.log("Retrieving studentData of student:" + studentData.user_id)
+
+    const chatHis = retrieveChatHistory(id)
+    const userProb = retrieveUserProblem(id)
+    const bingReply = retrieveUserBingReply(id)
+    const promises = [chatHis, userProb, bingReply];
+    const response = await Promise.all(promises);
+    studentData.history = response[0].data.data;
+    studentData.problem = response[1].data.data;
+    studentData.bing_reply = response[2].data.data;
+
+    reconstructChatHistory(studentData.history)
+    
+    console.log("finish retrieving studentData, retrieved studentData:", JSON.stringify(studentData, null, 2))
   }
 }
 
@@ -118,7 +131,7 @@ function setUser() {
  */
 function clearChatHistory() {
   messageChat.innerHTML = ''; // Clear the chat interface
-  full_history = [];
+  studentData.history = [];
   UpdateChatHistoryToDB();
 }
 
@@ -200,7 +213,7 @@ async function getTutorResponse() {
  * 
  * @param {string} message
  * @param {string} tutorInstruction
- * @returns {string} The response from the Chat GPT API
+ * @returns {Promise<string>} The response from the Chat GPT API
  */
 async function requestChatGptApi(message, tutorInstruction = '') {
   const pre = createMessageContainerHTML(BOT_NAME, BOT_IMG, 'left', formatDate(new Date()));
@@ -226,8 +239,8 @@ async function requestChatGptApi(message, tutorInstruction = '') {
         content: "!!!DO NOT PROVIDE SOLUTION CODE TO THE STUDENT'S PROBLEM!!!"
       },
       { role: 'user', content: studentData.problem },
-      { role: 'user', content: bing_reply },
-      ...full_history.map(messageObj => ({ role: messageObj.role, content: messageObj.content })),
+      { role: 'user', content: studentData.bing_reply },
+      ...studentData.history.map(messageObj => ({ role: messageObj.role, content: messageObj.content })),
       { role: 'user', content: message }
     ],
     stream: true,
@@ -332,7 +345,6 @@ async function getQuestionType(message){
     ----
     *Question*`;
 
-
     var responseMessage = "";
     const requestBody = {
         model: 'gpt-3.5-turbo',
@@ -341,7 +353,6 @@ async function getQuestionType(message){
         , { role: 'user', content: typePrompt + message }
         ]
     };
-    console.log("requestBody:\n" + requestBody.messages)
 
     const requestOptions = {
         method: 'POST',
@@ -351,6 +362,8 @@ async function getQuestionType(message){
         },
         body: JSON.stringify(requestBody)
     };
+    console.log("////////////////////////")
+    console.log("requestOptions:\n", requestOptions)
       
     try {
     const response = await fetch(
@@ -467,27 +480,26 @@ function tutorResponse(response) {
 
 // TODO: unclear what these two function does
 function addToHistory(role, content,time) {
-    full_history.push({ role: role, content: content,time:time });
+    studentData.history.push({ role: role, content: content,time:time });
 }
 
 
 function addToFull_History(input, time, response, ai_time) {
-    full_history.push({ role: 'user', content: input, time: time});
-    full_history.push({ role: 'assistant', content: response, time : ai_time });
+    studentData.history.push({ role: 'user', content: input, time: time});
+    studentData.history.push({ role: 'assistant', content: response, time : ai_time });
 }
 
 
 /** 
  * Save the chat history to a JSON file and post it to MongoDB server
 */
-async function UpdateChatHistoryToDB() {
+function UpdateChatHistoryToDB() {
   // studentData.type = problemType.value;
-  studentData.history = full_history;
   const jsonData = JSON.stringify(studentData, null, 2);
   // console.log(JSON.parse(jsonData).user_id)
   // console.log("save chat:")
   // console.log(full_history)
-  await postRequest(jsonData);
+  postRequest(jsonData);
 }
 
 
@@ -539,7 +551,9 @@ function loading_finished(){
 
 
 /** 
- *  Testing the Bing API
+ * Send the problem description to the Bing API and get the reply
+ * 
+ * @param {String} input
  */
 async function requestBingApi(input) {  
   await fetch('http://127.0.0.1:5000/bing', {
@@ -558,7 +572,7 @@ async function requestBingApi(input) {
   })
   .then(data => {
     console.log("bing reply: \n" + JSON.parse(data).bingOutput.text)
-    bing_reply = JSON.parse(data).bingOutput.text
+    studentData.bing_reply = JSON.parse(data).bingOutput.text
   })
   .catch(error => {
     console.error('There was a problem with the Fetch operation:', error);
@@ -571,10 +585,32 @@ async function requestBingApi(input) {
  * Get the problem description from the server
  * 
  * @param {String} id
- * @returns {String} The problem description
  */
 async function retrieveUserProblem(id) {
-  full_history = [];
+  studentData.history = [];
+  const payload = {
+    user_id: id,
+  };
+
+  const headers = {
+    'Content-Type': 'application/json'
+  };
+  
+  try {
+    const response = axios.post(dbLocalHostUrl + "user_problem", payload, { headers });
+    return response;
+  } catch (error) {
+    console.error('Error getting problem description from db:', error);
+  }
+}
+
+/**
+ * Get the bing reply from the server
+ * 
+ * @param {String} id
+ */
+async function retrieveUserBingReply(id) {
+  studentData.history = [];
   const payload = {
     user_id: id,
   };
@@ -583,25 +619,22 @@ async function retrieveUserProblem(id) {
     'Content-Type': 'application/json'
   };
 
-  axios
-    .post(dbLocalHostUrl + "userproblem", payload, { headers })
-    .then(response => {
-      studentData.problem = response.data.data;
-      console.log("retrieved studentData.problem:\n" + studentData.problem);
-    })
-    .catch(error => {
-      console.error('Error getting problem description from db:', error);
-    });
+  try {
+    const response = axios.post(dbLocalHostUrl + "user_bing_reply", payload, { headers });
+    return response;
+  } catch (error) {
+    console.error('Error getting bing reply from db:', error);
+  }
 }
 
 /**
- * Get the chat history from the server and display it on the chat window
+ * Get the chat history from the server
  * 
  * @param {String} id 
  */
 async function retrieveChatHistory(id) {
   messageChat.innerHTML = ''; // Clear the chat interface
-  full_history = [];
+  studentData.history = [];
   const payload = {
     user_id: id,
   };
@@ -610,36 +643,39 @@ async function retrieveChatHistory(id) {
     'Content-Type': 'application/json'
   };
 
-  axios
-    .post(dbLocalHostUrl + "userhistory", payload, { headers })
-    .then(response => {
-      // console.log(response.data.data.length);
-      if(response.data.data.length > 0)
-      {
-        messageChat.innerHTML = ''; // Clear the chat interface
-        full_history = [];
-        // 循環遍歷每一個元素，進行復原
-        for (const item of response.data.data) {
-          const role = item.role;
-          const content = item.content;
-          const time = item.time;
-      
-          // 使用 role、content、time 進行復原
-          // 你可以呼叫你的 appendMessage 函數來顯示訊息
-          // 例如：
-          if(role == "assistant" || role == "system") {
-            appendMessage(BOT_NAME, BOT_IMG, "left",content, time);
-          } else {
-            appendMessage(studentData.user_id, PERSON_IMG ,"right" ,content, time);
-          }
-          addToHistory(role,content,time);
-        }
-      }
-    })
-    .catch(error => {
-      console.error('Error:', error);
-    });
+  try {
+    const response = axios.post(dbLocalHostUrl + "user_history", payload, { headers });
+    return response;
+  } catch (error) {
+    console.error('Error getting chat history from db:', error);
+  }
 }
+
+function reconstructChatHistory(chatHistory) {
+  try {
+    if (chatHistory.length > 0) {
+      messageChat.innerHTML = ''; // Clear the chat interface
+      studentData.history = [];
+
+      for (const item of chatHistory) {
+        const role = item.role;
+        const content = item.content;
+        const time = item.time;
+
+        if (role == "assistant" || role == "system") {
+          appendMessage(BOT_NAME, BOT_IMG, "left", content, time);
+        } else {
+          appendMessage(studentData.user_id, PERSON_IMG, "right", content, time);
+        }
+        addToHistory(role, content, time);
+      }
+    }
+  } catch (error) {
+    console.error('Error reconstructing chat history:', error);
+  }
+}
+
+
 
 
 /**
@@ -648,12 +684,13 @@ async function retrieveChatHistory(id) {
  * @param jsonData 
  */
 function postRequest(jsonData) {
-  // console.log("POST:\n" + JSON.parse(jsonData).problem);
+  console.log("POST:", JSON.parse(jsonData));
   const payload = {
     user_id: JSON.parse(jsonData).user_id,
     type: JSON.parse(jsonData).type,
     chats: JSON.parse(jsonData).history,
-    problem: JSON.parse(jsonData).problem
+    problem: JSON.parse(jsonData).problem,
+    bing_reply: JSON.parse(jsonData).bing_reply
   };
 
   const headers = {
@@ -675,7 +712,7 @@ function postRequest(jsonData) {
 /////////////////////
 
 getProblemDescriptionButton.addEventListener("click", async () => {
-  getProblemDescription();
+  await getProblemDescription();
   postRequest(JSON.stringify(studentData, null, 2));
 });
 
@@ -689,14 +726,6 @@ messageSendButton.addEventListener("click", (event) => {
   getTutorResponse()
 });
 
-// bingButton.addEventListener("click", (event) => {
-//   event.preventDefault();
-//   loading_start();
-//   console.log("call bing~~");
-//   requestBingApi();
-//   loading_finished();
-// });
-
 messageInput.addEventListener("keydown", function(event) {
   if (event.key === "Enter") {
     event.preventDefault()
@@ -704,9 +733,9 @@ messageInput.addEventListener("keydown", function(event) {
   }
 })
 
-window.addEventListener("load", async function() {
+window.addEventListener("load", async () => {
   apiKey = await fetchAPIKey();
-  setUser();
+  await setUser();
   loading_finished();
 });
 
