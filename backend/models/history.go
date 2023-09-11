@@ -26,6 +26,7 @@ type HistoryService interface {
 	Create_chat(his History) error
 	Insert_chat(id string, chats []Chat) error
 	Update_problem(id string, problem string) error
+	GetUserProblem(id string) (bool, string)
 	// Delete_db(id string) error
 
 }
@@ -83,6 +84,22 @@ func (t *controllerOps) Update_problem(id string, problem string) error {
 		log.Print(u.Problem)
 	}
 	return nil
+}
+
+func (t *controllerOps) GetUserProblem(id string) (bool, string) {
+	c := t.Client.Database("Project").Collection("History")
+	log.Println(id)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	selector := bson.M{
+		"user_id": id,
+	}
+	u := &History{}
+	if err := c.FindOne(ctx, selector).Decode(u); err != nil {
+		return false, ""
+	}
+	// log.Println(u)
+	return true, u.Problem
 }
 
 func (t *controllerOps) Insert_chat(id string, chats []Chat) error {

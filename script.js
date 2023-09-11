@@ -98,15 +98,6 @@ async function getProblemDescription() {
       await requestBingApi(promptForBing);
 
       loading_finished();
-
-      // // Create a temporary anchor element to trigger the download
-      // const downloadLink = document.createElement("a");
-      // downloadLink.href = URL.createObjectURL(jsonBlob);
-      // downloadLink.download = "user_problem.json"; // File name
-      // downloadLink.click();
-
-      // // Clean up
-      // URL.revokeObjectURL(downloadLink.href);
   }
 }
 
@@ -487,7 +478,6 @@ async function UpdateChatHistoryToDB() {
   // console.log("save chat:")
   // console.log(full_history)
   await postRequest(jsonData);
-  // await UpdateUserProblem(studentData.id);
 }
 
 
@@ -563,6 +553,8 @@ async function requestBingApi(input) {
   .catch(error => {
     console.error('There was a problem with the Fetch operation:', error);
   });
+  
+  // return true;
 }
 
 /**
@@ -589,31 +581,6 @@ async function retrieveUserProblem(id) {
     })
     .catch(error => {
       console.error('Error getting problem description from db:', error);
-    });
-}
-
-/**
- * Update the problem description to the server
- * 
- * @param {String} id
- */
-async function UpdateUserProblem(id) {
-  const payload = {
-    user_id: id,
-    problem: studentData.problem
-  };
-
-  // console.log("UpdateUserProblem to:")
-  // console.log(studentData.problem)
-  
-  const headers = {
-    'Content-Type': 'application/json'
-  };
-
-  axios
-    .post(dbLocalHostUrl + "updateproblem", payload, { headers })
-    .catch(error => {
-      console.error('Error updating problem description from db:', error);
     });
 }
 
@@ -699,6 +666,7 @@ function postRequest(jsonData) {
 
 getProblemDescriptionButton.addEventListener("click", async () => {
   getProblemDescription();
+  postRequest(JSON.stringify(studentData, null, 2));
 });
 
 userIdButton.addEventListener("click", setUser);
