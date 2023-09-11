@@ -463,21 +463,6 @@ function appendMessage(name, img, side, text ,time) {
 }
 
 
-/**
- * Append GPT-Tutor's response to the chat window 
- * 
- * @param {*} response 
- * @returns 
- */
-function tutorResponse(response) {
-    var time = formatDate(new Date());
-    // var ai_time = appendMessage(BOT_NAME, BOT_IMG, "left", response, time);
-
-    // console.log("response", response)
-    return ai_time;
-}
-
-
 // TODO: unclear what these two function does
 function addToHistory(role, content,time) {
     studentData.history.push({ role: role, content: content,time:time });
