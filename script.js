@@ -10,8 +10,6 @@ const messageSendButton = _get("#message-send-button");
 const clearChatHistoryButton = _get("#clear-button");
 const getProblemDescriptionButton = _get("#problem-input-button")
 const userIdButton = _get("#user-id-button")
-// const problemType = _get("#problem_type");
-// const bingButton = _get("#bingbtn");
 
 // Path to the API key file
 const apiKeyURL = "API_KEY.txt";
@@ -78,9 +76,11 @@ async function getProblemDescription() {
       console.log("User entered:", studentData.problem);
       const promptForBing = `*Instruction*
         Generate: 
-        1.Edge cases with respect to the constraints of the problem 
-        2. Detailed rules or flow of the problem
-
+        1. Edge cases with respect to each constraint of the problem.
+        2. General rules or flow of the problem.
+        **Note** 
+        1. please do NOT provide any code or snippet of code.
+        2. please make your response short and neat.
         *Problem description*\n`
         +studentData.problem;
       // console.log("in getProblemDescription")
@@ -107,6 +107,7 @@ async function getProblemDescription() {
 async function setUser() {
   const id = window.prompt("Enter your id:");
   if (id !== null) {
+    loading_finished()
     studentData.user_id = id
     console.log("Retrieving studentData of student:" + studentData.user_id)
 
@@ -122,6 +123,7 @@ async function setUser() {
     reconstructChatHistory(studentData.history)
     
     console.log("finish retrieving studentData, retrieved studentData:", JSON.stringify(studentData, null, 2))
+
   }
 }
 
@@ -158,6 +160,7 @@ async function getTutorResponse() {
 
   // 針對不同type使用不同prompt
   if (questionType == "U") {
+    //undesired output
     tutorInstruction = `*Instruction*
   The goal is to provide a hint to help the student diagnose why their code is producing an undesired output with the input provided by the student. Below are the detailed steps you need to follow:
   1. Ask the student about the intention of the code they provide if the student didn't say it in the question. e.g. "Can you explain how you think your code should work? "
@@ -165,20 +168,23 @@ async function getTutorResponse() {
   3. After those, pose thought-provoking questions, and list out any potential pitfalls or logical errors that might be causing the unexpected output.
   4. The problem that can be fixed with less code or is easier to fix should be addressed first.`;
   } else if (questionType == "H") {
+    //hint
     tutorInstruction = `*Instruction*
   Provide hints for the student to solve their problem, and below are the steps you must follow:
   1. Explain the thing that the student is asking with easy-to-understand language and examples if possible.
   2. List out 3 different strategies including what algorithm, data structure … to use, then provide pros and cons for each one of them for the student's reference.
-  3. Choose one strategy listed above, then give a high-level step-by-step guidance, for example.
+  3. Choose one strategy listed above, then give a neat general idea for example.
   4. Remind the student to take care of some potential pitfalls.
   5. List out the keywords for coding knowledge that may be applied to the student's question or this coding problem.`;
   } else if (questionType == "C") {
+    //compile error
     tutorInstruction = `*Instruction*
   The goal is to provide a hint to help the student diagnose why their code is having a compile error. Below are the detailed steps you need to follow:
   1. Explain the error message provided by the compiler.
   2. Review syntax, variable names, and data types, and if that's the reason causing the compile error, tell the student to check for it with questions.
   3. Pose thought-provoking questions, and list out any potential pitfalls or logical errors that might be causing the compile error.`;
   } else if (questionType == "N") {
+    //no AC
     tutorInstruction = `*Instruction*
   Provide a hint to help the student optimize their code and address issues causing it not to get accepted on the online judge. Below are the detailed steps you need to follow:
   1. If there's a time limit exceeded (TLE), then assume the logic of the code is correct and provide hints to help the student optimize the efficiency of the code, and then skip the below steps.
@@ -198,7 +204,8 @@ async function getTutorResponse() {
     const response = await requestChatGptApi(msgText, tutorInstruction);
     // var ai_time = tutorResponse(response);
 
-    addToFull_History(msgText, user_time, response, formatDate(new Date()));
+    addToHistory("user" ,msgText ,user_time);
+    addToHistory("assistant" ,response ,formatDate(new Date()));
   } catch (error) {
     // Handle any errors that occur during the GPT_api call
     console.error(error);
@@ -227,21 +234,19 @@ async function requestChatGptApi(message, tutorInstruction = '') {
         role: 'system',
         content: `*Role*
         Behave as a coding tutor with the following qualities:
-        - Be inspiring, patient, and professional.
         - Use structured content and bullet points to enhance clarity.
-        - Encourage thought-provoking questions to foster insight.
-        - Don't give too detailed step-by-step guides if they are not asked for.
-        - Decide how much information to provide based on the student's level of understanding.`
+        - please make your response short and NEAT.
+        - Don't give detailed step-by-step guides if they are not asked for.`
       },
-      { role: 'user', content: tutorInstruction },
       {
         role: 'system',
-        content: "!!!DO NOT PROVIDE SOLUTION CODE TO THE STUDENT'S PROBLEM!!!"
+        content: "!!!DO NOT generate answer code or snippet code to STUDENT'S PROBLEM!!!"
       },
+      { role: 'user', content: tutorInstruction },
       { role: 'user', content: studentData.problem },
       { role: 'user', content: studentData.bing_reply },
       ...studentData.history.map(messageObj => ({ role: messageObj.role, content: messageObj.content })),
-      { role: 'user', content: message }
+      { role: 'user', content: message + "!!!DO NOT generate answer code or snippet code to STUDENT'S PROBLEM!!!"}
     ],
     stream: true,
   };
@@ -466,12 +471,6 @@ function appendMessage(name, img, side, text ,time) {
 // TODO: unclear what these two function does
 function addToHistory(role, content,time) {
     studentData.history.push({ role: role, content: content,time:time });
-}
-
-
-function addToFull_History(input, time, response, ai_time) {
-    studentData.history.push({ role: 'user', content: input, time: time});
-    studentData.history.push({ role: 'assistant', content: response, time : ai_time });
 }
 
 
