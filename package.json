@@ -17,9 +17,12 @@
     "url": "https://github.com/waylon620/GPT-tutor/issues"
   },
   "homepage": "https://github.com/waylon620/GPT-tutor#readme",
-
   "origin": "*",
   "methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
   "preflightContinue": false,
-  "optionsSuccessStatus": 204
+  "optionsSuccessStatus": 204,
+  "dependencies": {
+    "franc": "^6.1.0",
+    "franc-min": "^6.1.0"
+  }
 }

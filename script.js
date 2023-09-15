@@ -2,6 +2,8 @@
 // Constants & Variables //
 ///////////////////////////
 
+import {franc, francAll} from 'https://esm.sh/franc@6'
+
 // Dom elements
 const messageForm = _get(".message-input-area");
 const messageInput = _get(".message-input");
@@ -11,6 +13,7 @@ const clearChatHistoryButton = _get("#clear-button");
 const getProblemDescriptionButton = _get("#problem-input-button")
 const userIdButton = _get("#user-id-button")
 
+
 // Path to the API key file
 const apiKeyURL = "API_KEY.txt";
 var apiKey = "";
@@ -19,7 +22,7 @@ var apiKey = "";
 const BOT_IMG = "angular.svg";
 const PERSON_IMG = "duck.svg";
 const BOT_NAME = "GPT-Tutor";
-const PERSON_NAME = "User";
+const EDIT_IMG = "pen.svg";
 
 const studentData = { 
   user_id: "waylon", 
@@ -66,7 +69,6 @@ async function fetchAPIKey() {
   }
 }
 
-
 /**
  * Ask the student to provide the problem description
 */
@@ -74,6 +76,7 @@ async function getProblemDescription() {
   studentData.problem = window.prompt("Enter the problem description:");
   if (studentData.problem !== null && studentData.problem !== "") {
       console.log("User entered:", studentData.problem);
+
       const promptForBing = `*Instruction*
         Generate: 
         1. Edge cases with respect to each constraint of the problem.
@@ -84,7 +87,6 @@ async function getProblemDescription() {
         *Problem description*\n`
         +studentData.problem;
       // console.log("in getProblemDescription")
-      // console.log(full_history)
       
       // You can perform actions with the entered topic here
       const jsonData = { topic: studentData.problem }; // Create a JSON object
@@ -94,7 +96,7 @@ async function getProblemDescription() {
 
       console.log("call bing~~");
       //provide problem description to bing and ask for edge cases and rules for ChatGPT's reference
-      await requestBingApi(promptForBing);
+      requestBingApi(promptForBing);
 
       loading_finished();
   }
@@ -141,10 +143,10 @@ function clearChatHistory() {
 /**
  * Implement the flow of the chatbot, and generate a response from GPT-Tutor to the student's question
  */
-async function getTutorResponse() {
+async function getTutorResponse(msgText, from_modified) {
   console.log("in getTutorResponse")
-  // loading_start();
-  const msgText = messageInput.value;
+  loading_start()
+  // const msgText = messageInput.value;
   if (!msgText) return;
 
   if(studentData.problem == "") {
@@ -195,9 +197,10 @@ async function getTutorResponse() {
     // Universal prompt (default)
   }
 
-
+  loading_finished()
   var time = formatDate(new Date());
-  var user_time = appendMessage(studentData.user_id, PERSON_IMG, "right", msgText, time);
+  var user_time;
+  if(!from_modified) user_time = appendMessage(studentData.user_id, PERSON_IMG, "right", msgText, time);
 
   messageInput.value = "";
   try {
@@ -246,9 +249,10 @@ async function requestChatGptApi(message, tutorInstruction = '') {
       { role: 'user', content: studentData.problem },
       { role: 'user', content: studentData.bing_reply },
       ...studentData.history.map(messageObj => ({ role: messageObj.role, content: messageObj.content })),
-      { role: 'user', content: message + "!!!DO NOT generate answer code or snippet code to STUDENT'S PROBLEM!!!"}
+      { role: 'user', content: 'user problem: '+ studentData.problem + '\n user input: ' + message + "!!!DO NOT generate answer code or snippet code to STUDENT'S PROBLEM!!!"}
     ],
     stream: true,
+    // max_tokens: 50,
   };
 
   const requestOptions = {
@@ -424,8 +428,6 @@ function createMessageContainerHTML(name, img, side, time) {
   }
 }
 
-
-
 /**
  * Append message to the chat window
  * 
@@ -438,7 +440,9 @@ function createMessageContainerHTML(name, img, side, time) {
  */
 function appendMessage(name, img, side, text ,time) {
   var time = formatDate(new Date());
-  const msgHTML = `
+  var msgHTML = ''
+  if(side == 'right'){
+    msgHTML = `
     <div class="message ${side}-message">
     <div class="message-icon">
       <img src="${img}" alt="${name}'s Icon">
@@ -447,12 +451,33 @@ function appendMessage(name, img, side, text ,time) {
       <div class="message-bubble">
         <div class="message-info">
           <div class="message-info-name">${name}</div>
-          <div class="message-info-time">${time}</div>
+          <div class="time-and-edit">
+            <div class="message-info-time">${time}</div>
+            <img src="${EDIT_IMG}" class="edit-btn">  
+          </div>
         </div>
         <div class="message-text"><pre>${text}</pre></div>
       </div>
     </div>
   `;
+  }
+  else{
+    msgHTML = `
+      <div class="message ${side}-message">
+      <div class="message-icon">
+        <img src="${img}" alt="${name}'s Icon">
+      </div>
+  
+        <div class="message-bubble">
+          <div class="message-info">
+            <div class="message-info-name">${name}</div>
+            <div class="message-info-time">${time}</div>
+          </div>
+          <div class="message-text"><pre>${text}</pre></div>
+        </div>
+      </div>
+    `;
+  }
   
   messageChat.insertAdjacentHTML("beforeend", msgHTML);
   messageChat.scrollTop += 500;
@@ -466,6 +491,46 @@ function appendMessage(name, img, side, text ,time) {
 
   return time;
 }
+
+function modifyMessage(messageElement) {
+  // Get the text content of the message
+  const messageTextElement = messageElement.querySelector('.message-text pre');
+  const currentText = messageTextElement.textContent;
+
+  // Prompt the user to enter a new message
+  const newText = window.prompt('Edit the message:', currentText);
+
+  // Update the message text if the user entered something
+  if (newText !== null && newText !== "") {
+    messageTextElement.textContent = newText;
+
+      // Find all the message elements that are below the modified message
+    const messagesBelowModified = Array.from(messageChat.querySelectorAll('.message'))
+    .filter((message) => message.offsetTop > messageElement.offsetTop);
+
+    // Remove the messages below the modified message from the DOM
+    messagesBelowModified.forEach((message) => {
+      messageChat.removeChild(message);
+    });
+
+      // Find the index of the modified message in studentData.history
+    const modifiedMessageIndex = studentData.history.findIndex((message) => message.content == currentText);
+
+    // Check if the modified message was found
+    if (modifiedMessageIndex !== -1) {
+      // studentData.history[modifiedMessageIndex].content = newText;
+
+      // Create a new array containing messages above the modified message
+      const updatedHistory = studentData.history.slice(0, modifiedMessageIndex);
+
+      // Update studentData.history with the new array
+      studentData.history = updatedHistory;
+      messageChat.scrollTop = messageChat.scrollHeight;
+      getTutorResponse(newText,1)
+    }
+  }
+}
+
 
 
 // TODO: unclear what these two function does
@@ -482,7 +547,6 @@ function UpdateChatHistoryToDB() {
   const jsonData = JSON.stringify(studentData, null, 2);
   // console.log(JSON.parse(jsonData).user_id)
   // console.log("save chat:")
-  // console.log(full_history)
   postRequest(jsonData);
 }
 
@@ -533,6 +597,12 @@ function loading_finished(){
   console.log("loading end");
 }
 
+function distinguish_lan(input){
+  const languageCode = franc(input);
+  console.log('lan: ' , languageCode); 
+  if(languageCode=='cmn') return 1;
+  return 0;
+}
 
 /** 
  * Send the problem description to the Bing API and get the reply
@@ -707,7 +777,7 @@ clearChatHistoryButton.addEventListener("click", clearChatHistory);
 messageSendButton.addEventListener("click", (event) => {
   event.preventDefault();
   messageChat.scrollTop = messageChat.scrollHeight;
-  getTutorResponse()
+  getTutorResponse(messageInput.value,0)
 });
 
 messageInput.addEventListener("keydown", function(event) {
@@ -723,3 +793,9 @@ window.addEventListener("load", async () => {
   loading_finished();
 });
 
+messageChat.addEventListener("click", (event) => {
+  if (event.target.classList.contains('edit-btn')) {
+    const messageElement = event.target.closest('.message'); // Find the parent message container
+    modifyMessage(messageElement);
+  }
+});

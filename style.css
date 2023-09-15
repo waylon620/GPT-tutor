@@ -116,6 +116,14 @@ pre {
 
 .message-info-time {
   font-size: 0.85em;
+  margin: 0; /* Remove margin */
+}
+.edit-btn {
+  cursor: pointer;
+}
+.time-and-edit {
+  display: flex; /* Use flexbox for the right side container */
+  align-items: center; /* Vertically align its children */
 }
 
 .message-text {
@@ -153,6 +161,7 @@ pre {
   margin: 0 5px;
   color: #999;
   font-size: 12px;
+  text-align: right; /* Align the text to the right */
 }
 
 /* Message Input Area Styles */
