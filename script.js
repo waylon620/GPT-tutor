@@ -342,8 +342,6 @@ async function requestChatGptApi(message, tutorInstruction = '') {
 
         button.onclick = function() {
 
-            const pythonCode = 'print("Hello, World!")';  // 你的Python代码
-
             if(!test_flag){
               const middleRow = document.querySelector(".middle-row");
               // Create the form element
@@ -388,6 +386,21 @@ async function requestChatGptApi(message, tutorInstruction = '') {
                   // 显示智能提示
                   // myCodeMirror.showHint();
               });
+
+              const bottomRow = document.querySelector(".bottom-row");
+              const outputContainer = document.createElement("div");
+              outputContainer.id = "output-container";
+              const heading = document.createElement("h2");
+              heading.textContent = "Output:";
+
+              // Create a <pre> element for displaying the output
+              const outputElement = document.createElement("pre");
+              outputElement.id = "output";
+              outputContainer.appendChild(heading);
+              outputContainer.appendChild(outputElement);
+
+              bottomRow.appendChild(outputContainer);
+
               test_flag = 1
             }
 
@@ -398,6 +411,10 @@ async function requestChatGptApi(message, tutorInstruction = '') {
 
               // Remove the form element from the middle-row
               middleRow.removeChild(form);
+
+              const bottomRow = document.querySelector(".bottom-row");
+              const outputContainer = bottomRow.querySelector("div");
+              bottomRow.removeChild(outputContainer)
 
               test_flag = 0
             }
@@ -415,7 +432,14 @@ async function requestChatGptApi(message, tutorInstruction = '') {
             })
               .then((response) => response.json())
               .then((data) => {
-                console.log(data.result);  // 服务器返回的执行结果
+                if(data.error){
+                  const outputElement = document.getElementById("output");
+                  outputElement.textContent =  data.error;
+                }
+                else{
+                  const outputElement = document.getElementById("output");
+                  outputElement.textContent =  data.result;
+                }
                 console.log(data.error);
               })
               .catch((error) => {
@@ -894,9 +918,27 @@ clearChatHistoryButton.addEventListener("click", clearChatHistory);
 
 messageSendButton.addEventListener("click", (event) => {
   event.preventDefault();
-  messageChat.scrollTop = messageChat.scrollHeight;
-  getTutorResponse(messageInput.value,0)
-});
+  if(messageInput.value!=""){
+    messageChat.scrollTop = messageChat.scrollHeight;
+    getTutorResponse(messageInput.value,0);
+  
+    if(test_flag == 1){
+      const middleRow = document.querySelector(".middle-row");
+      // Get a reference to the child form element
+      const form = middleRow.querySelector("form");
+  
+      // Remove the form element from the middle-row
+      middleRow.removeChild(form);
+  
+      const bottomRow = document.querySelector(".bottom-row");
+      const outputContainer = bottomRow.querySelector("div");
+      bottomRow.removeChild(outputContainer)
+  
+      test_flag = 0
+    }
+  }
+  });
+
 
 messageInput.addEventListener("keydown", function(event) {
   if (event.key === "Enter") {

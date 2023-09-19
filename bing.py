@@ -47,15 +47,25 @@ def compile_python():
 
         # 执行Python代码
         command = 'python code/code.py'
-        result = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT, universal_newlines=True)
+        result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
 
-        return jsonify({'result': result.strip()})
+        # 检查是否有错误消息
+        if result.returncode != 0:
+            # Python代码运行出错，返回标准错误流（stderr）中的错误消息
+            error_message = result.stderr.strip()
+            return jsonify({'error': error_message})
+        else:
+            # Python代码运行成功，返回标准输出流（stdout）中的结果
+            output_result = result.stdout.strip()
+            return jsonify({'result': output_result})
     except Exception as e:
+        # 捕获其他异常
         return jsonify({'error': str(e)})
+    #     result = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT, universal_newlines=True)
 
-# async def loadPkg():
-#     await micropip.install("ssl")
-#     from EdgeGPT.EdgeGPT import Chatbot, ConversationStyle
+    #     return jsonify({'result': result.strip()})
+    # except Exception as e:
+    #     return jsonify({'error': str(e)})
 
 if __name__ == '__main__':
     os.makedirs('code', exist_ok=True)

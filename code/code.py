@@ -2,4 +2,6 @@
 
 # code start
 
-print("hello")
+s = "ioiohui"
+abbreviation = s[0] + str(len(s) - 2) + s[-1]
+print(abbreviation)
