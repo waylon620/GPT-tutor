@@ -13,6 +13,9 @@ const clearChatHistoryButton = _get("#clear-button");
 const getProblemDescriptionButton = _get("#problem-input-button")
 const userIdButton = _get("#user-id-button")
 
+var responsed_code = "";
+var test_flag = 0
+var myCodeMirror
 
 // Path to the API key file
 const apiKeyURL = "API_KEY.txt";
@@ -172,12 +175,12 @@ async function getTutorResponse(msgText, from_modified) {
   } else if (questionType == "H") {
     //hint
     tutorInstruction = `*Instruction*
-  Provide hints for the student to solve their problem, and below are the steps you must follow:
-  1. Explain the thing that the student is asking with easy-to-understand language and examples if possible.
-  2. List out 3 different strategies including what algorithm, data structure … to use, then provide pros and cons for each one of them for the student's reference.
-  3. Choose one strategy listed above, then give a neat general idea for example.
-  4. Remind the student to take care of some potential pitfalls.
-  5. List out the keywords for coding knowledge that may be applied to the student's question or this coding problem.`;
+  Provide hint for the student to solve their problem, and below are the rules you should follow:
+  1. Only provide ONE step that the student should do with easy-to-understand language and make your response short as possible.
+  2. Generate next step ONLY if the student can understand the first step.
+  3. Give a neat general idea if the student asked.
+  4. List out the keywords for coding knowledge that may be applied to the student's question or this coding problem.
+  5. Ask the student if they can understand or provide an easy coding test with "xxx" for student to fill at the end.`;
   } else if (questionType == "C") {
     //compile error
     tutorInstruction = `*Instruction*
@@ -309,7 +312,124 @@ async function requestChatGptApi(message, tutorInstruction = '') {
         }
         
         result = await reader.read();
+        if (messageChat.scrollTop + 600 >= messageChat.scrollHeight) {
+          messageChat.scrollTop = messageChat.scrollHeight;
+        }
       }
+
+      const htmlResponse = marked.parse(fullResponse);
+      pre.innerHTML = `<div class="markdown-block">${htmlResponse}</div>`;
+
+      const codeBlocks = fullResponse.split('```');
+      responsed_code = "";
+      for (let i = 0; i < codeBlocks.length; i++) {
+        if (i >= 2) { // Check if there are at least 3 code blocks
+          responsed_code = codeBlocks[1].replace(/^python|python$/g, "").trim() // Get the code from the third code block
+          break;
+        }
+      }
+
+
+      if (responsed_code !== "") {
+        // Do something with the extracted code
+        console.log("Extracted code:", responsed_code);
+
+        // Create a button element
+        const button = document.createElement("button");
+        button.setAttribute("id", "test");
+        button.setAttribute("class", "test_btn");
+        button.textContent = "Try It!"; // Set the button text
+
+        button.onclick = function() {
+
+            const pythonCode = 'print("Hello, World!")';  // 你的Python代码
+
+            if(!test_flag){
+              const middleRow = document.querySelector(".middle-row");
+              // Create the form element
+              const form = document.createElement("form");
+              form.setAttribute("action", "");
+
+              // Create the textarea element
+              const textarea = document.createElement("textarea");
+              textarea.setAttribute("id", "editor");
+              textarea.setAttribute("class", "editor");
+
+              // Append the textarea and button to the form
+              form.appendChild(textarea);
+
+              // Append the form to the middle-row div
+              middleRow.appendChild(form);
+
+              var el = document.getElementById("editor");
+              var codeStart = "# version: Python3\n\n# code start\n\n";
+              var initValue = codeStart + responsed_code ;
+              myCodeMirror = CodeMirror.fromTextArea(el, {
+                  mode: "python", // 语言模式
+                  theme: "leetcode", // 主题
+                  keyMap: "sublime", // 快键键风格
+                  lineNumbers: true, // 显示行号
+                  smartIndent: true, // 智能缩进
+                  indentUnit: 4, // 智能缩进单位为4个空格长度
+                  indentWithTabs: true, // 使用制表符进行智能缩进
+                  lineWrapping: true, // 
+                  // 在行槽中添加行号显示器、折叠器、语法检测器
+                  gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter", "CodeMirror-lint-markers"], 
+                  foldGutter: true, // 启用行槽中的代码折叠
+                  autofocus: true, // 自动聚焦
+                  matchBrackets: true, // 匹配结束符号，比如"]、}"
+                  autoCloseBrackets: true, // 自动闭合符号
+                  styleActiveLine: true, // 显示选中行的样式
+              });
+              // 设置初始文本，这个选项也可以在fromTextArea中配置
+              myCodeMirror.setOption("value", initValue);
+              // 编辑器按键监听
+              myCodeMirror.on("keypress", function() {
+                  // 显示智能提示
+                  // myCodeMirror.showHint();
+              });
+              test_flag = 1
+            }
+
+            else{
+              const middleRow = document.querySelector(".middle-row");
+              // Get a reference to the child form element
+              const form = middleRow.querySelector("form");
+
+              // Remove the form element from the middle-row
+              middleRow.removeChild(form);
+
+              test_flag = 0
+            }
+        };
+
+        
+        document.addEventListener("keydown", function(event) {
+          if (event.shiftKey && event.key === "Enter" && test_flag) {
+              fetch('http://localhost:5000/compilePython', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ code: myCodeMirror.getValue() }),
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                console.log(data.result);  // 服务器返回的执行结果
+                console.log(data.error);
+              })
+              .catch((error) => {
+                console.error('Error:', error);
+              });
+          }
+        });
+      // Insert the button after the 'pre' element
+      pre.insertAdjacentElement("afterend", button);
+      } else {
+        // Handle the case where there are not enough code blocks
+        console.log("Not enough code blocks found.");
+      }
+
 
     } else {
         // Handle the error case
@@ -319,9 +439,6 @@ async function requestChatGptApi(message, tutorInstruction = '') {
     // Handle the error case
     console.log('Error:', error);
   } 
-
-  const htmlResponse = marked.parse(fullResponse);
-  pre.innerHTML = `<div class="markdown-block">${htmlResponse}</div>`;
 
   return fullResponse; // Return the full response message
 }
@@ -348,6 +465,7 @@ async function getQuestionType(message){
     - Hint (Give student good guidance that is thought-provoking, and provide related concepts)
     - Compile error (Help student find bugs in the code and needed knowledge related to the error message)
     - Not getting AC (Help student find the underlying problem that might lead to not passing all the test cases on the online judge system)
+    If the user's question is too short or hard to classify, just reply "default"
     !!!Only contain the first character of the name of that type in your response!!!
     e.g. Question: Why is the code having a compile error? You: C (since it's a compile error)
     Question: Only 9 of 17 test cases are accepted, why? You: N (since it's not getting AC)
@@ -374,7 +492,7 @@ async function getQuestionType(message){
     console.log("////////////////////////")
     console.log("requestOptions:\n", requestOptions)
       
-    try {
+    try { 
     const response = await fetch(
         'https://api.openai.com/v1/chat/completions',
         requestOptions
@@ -433,7 +551,7 @@ function createMessageContainerHTML(name, img, side, time) {
  * 
  * @param {*} name
  * @param {*} img 
- * @param {*} side 
+ * @param {*} side tGptApi
  * @param {*} text 
  * @param {*} time 
  * @returns 
@@ -797,5 +915,249 @@ messageChat.addEventListener("click", (event) => {
   if (event.target.classList.contains('edit-btn')) {
     const messageElement = event.target.closest('.message'); // Find the parent message container
     modifyMessage(messageElement);
+  }
+});
+
+
+
+
+// // 獲取按鈕元素
+// const openButton = document.getElementById('openButton');
+
+// // 點擊按鈕後執行的函數
+// openButton.addEventListener('click', () => {
+//   // 打開一個新的視窗（或對話框）
+//   const popupWindow = window.open('', 'popupWindow', 'width=400,height=400');
+
+//   const htmlContent = `
+//   <!DOCTYPE html>
+//   <html lang="en">
+//   <head>
+//       <meta charset="UTF-8">
+//       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+//       <meta http-equiv="X-UA-Compatible" content="ie=edge">
+//       <title>Document</title>
+//       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/codemirror.css">
+//       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/fold/foldgutter.css">
+//       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/hint/show-hint.css">
+//       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/lint/lint.css">
+//   </head>
+//   <body>
+//       <form action="">
+//           <textarea id="editor" class="editor"></textarea>
+//       </form>   
+//       <button id="test">click</button>
+//   </body>
+//   </html>
+//   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/codemirror.js" async></script>
+//   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/comment/comment.js" async></script>
+//   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/selection/active-line.js" async></script>
+//   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/keymap/sublime.js" async></script>
+//   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/hint/show-hint.js" async></script>
+//   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/mode/python/python.js" async></script> 
+//   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/fold/foldcode.js" async></script>
+//   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/fold/foldgutter.js" async></script>
+//   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/fold/brace-fold.js" async></script>
+//   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/fold/indent-fold.js" async></script>
+//   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/fold/comment-fold.js" async></script>
+//   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/edit/closebrackets.js" async></script>
+//   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/edit/matchbrackets.js" async></script>
+//   <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.24.0/axios.js" async></script>
+//   <script>
+//       window.onload = function () {
+//         var el = document.getElementById("editor");
+//         // var version = "# version: Python3\n\n";
+//         // var codeAreaTip = "# please edit your code here:\n";
+//         var codeStart = "# code start\n\n";
+//         // var codeEnd = "# code end\n\n";
+//         // var codeTip = "'''\nThis function is the entry of this program and\nit must be return your answer of current question.\n'''\n";
+//         // var code = "def solution():\n\tpass";
+//         // var initValue = version + codeAreaTip + codeStart + codeEnd + codeTip + code;
+//         var initValue = codeStart ;
+//         var myCodeMirror = CodeMirror.fromTextArea(el, {
+//             mode: "python", // 语言模式
+//             theme: "leetcode", // 主题
+//             keyMap: "sublime", // 快键键风格
+//             lineNumbers: true, // 显示行号
+//             smartIndent: true, // 智能缩进
+//             indentUnit: 4, // 智能缩进单位为4个空格长度
+//             indentWithTabs: true, // 使用制表符进行智能缩进
+//             lineWrapping: true, // 
+//             // 在行槽中添加行号显示器、折叠器、语法检测器
+//             gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter", "CodeMirror-lint-markers"], 
+//             foldGutter: true, // 启用行槽中的代码折叠
+//             autofocus: true, // 自动聚焦
+//             matchBrackets: true, // 匹配结束符号，比如"]、}"
+//             autoCloseBrackets: true, // 自动闭合符号
+//             styleActiveLine: true, // 显示选中行的样式
+//         });
+//         // 设置初始文本,这个选项也可以在fromTextArea中配置
+//         myCodeMirror.setOption("value", initValue);
+//         // 编辑器按键监听
+//         myCodeMirror.on("keypress", function() {
+//             // 显示智能提示
+//             // myCodeMirror.showHint(); 
+//         });
+//         var test = document.getElementById("test");
+//         test.onclick = function() {
+//             const pythonCode = 'print("Hello, World!")';  // 你的Python代码
+            
+//             fetch('http://localhost:3000/compilePython', {
+//               method: 'POST',
+//               headers: {
+//                 'Content-Type': 'application/json',
+//               },
+//               body: JSON.stringify({ code: myCodeMirror.getValue() }),
+//             })
+//               .then((response) => response.json())
+//               .then((data) => {
+//                 console.log(data.result);  // 服务器返回的执行结果
+//               })
+//               .catch((error) => {
+//                 console.error('Error:', error);
+//               });
+
+
+//             // var value = myCodeMirror.getValue();
+//             // axios.post("http://localhost/api/runcode", {
+//             //     code: value
+//             // }).then(function(res) {
+//             //     console.log(res);
+//             // });
+//         };
+//      };
+
+//   </script>
+//   `;
+
+//   // 在新的窗口中写入 HTML 内容
+//   popupWindow.document.write(htmlContent);
+  
+
+//   // 當在彈出視窗上點擊關閉按鈕時執行的函數
+//   popupWindow.document.getElementById('closeButton').addEventListener('click', () => {
+//     // 在這裡可以進行一些操作並返回結果，例如：
+//     const result = '這是從視窗返回的結果';
+    
+//     // 關閉視窗
+//     popupWindow.close();
+
+//     // 在原始畫面中處理返回的結果
+//     alert(`收到來自視窗的結果：${result}`);
+
+//   });
+//   // // 在視窗關閉前的事件處理程序
+//   // popupWindow.addEventListener('beforeunload', (event) => {
+//   //   const result = '這是從視窗返回的結';
+
+//   //   // 在按下視窗的 X 按鈕時執行操作
+//   //   // ...
+
+//   //   // 將結果作為提示訊息返回
+//   //   event.returnValue = `確定要關閉視窗嗎？(結果：${result})`;
+
+//   //   alert(`收到來自視窗的結果：${result}`);
+
+//   // });
+// });
+
+
+
+
+
+
+
+
+
+
+
+// var test_flag = 0
+// var myCodeMirror
+// const test_btn = document.getElementById("test");
+// test_btn.onclick = function() {
+
+//     const pythonCode = 'print("Hello, World!")';  // 你的Python代码
+
+//     if(!test_flag){
+//       const middleRow = document.querySelector(".middle-row");
+//       // Create the form element
+//       const form = document.createElement("form");
+//       form.setAttribute("action", "");
+
+//       // Create the textarea element
+//       const textarea = document.createElement("textarea");
+//       textarea.setAttribute("id", "editor");
+//       textarea.setAttribute("class", "editor");
+
+//       // Append the textarea and button to the form
+//       form.appendChild(textarea);
+
+//       // Append the form to the middle-row div
+//       middleRow.appendChild(form);
+
+//       var el = document.getElementById("editor");
+//       var codeStart = "# version: Python3\n\n# code start\n\n";
+//       var initValue = codeStart + responsed_code ;
+//       myCodeMirror = CodeMirror.fromTextArea(el, {
+//           mode: "python", // 语言模式
+//           theme: "leetcode", // 主题
+//           keyMap: "sublime", // 快键键风格
+//           lineNumbers: true, // 显示行号
+//           smartIndent: true, // 智能缩进
+//           indentUnit: 4, // 智能缩进单位为4个空格长度
+//           indentWithTabs: true, // 使用制表符进行智能缩进
+//           lineWrapping: true, // 
+//           // 在行槽中添加行号显示器、折叠器、语法检测器
+//           gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter", "CodeMirror-lint-markers"], 
+//           foldGutter: true, // 启用行槽中的代码折叠
+//           autofocus: true, // 自动聚焦
+//           matchBrackets: true, // 匹配结束符号，比如"]、}"
+//           autoCloseBrackets: true, // 自动闭合符号
+//           styleActiveLine: true, // 显示选中行的样式
+//       });
+//       // 设置初始文本，这个选项也可以在fromTextArea中配置
+//       myCodeMirror.setOption("value", initValue);
+//       // 编辑器按键监听
+//       myCodeMirror.on("keypress", function() {
+//           // 显示智能提示
+//           // myCodeMirror.showHint();
+//       });
+//       test_flag = 1
+//     }
+
+//     else{
+//       const middleRow = document.querySelector(".middle-row");
+//       // Get a reference to the child form element
+//       const form = middleRow.querySelector("form");
+
+//       // Remove the form element from the middle-row
+//       middleRow.removeChild(form);
+
+//       test_flag = 0
+//     }
+// };
+
+
+
+
+
+
+
+document.addEventListener("keydown", function(event) {
+  if (event.shiftKey && event.key === "Enter" && test_flag) {
+      fetch('http://localhost:5000/compilePython', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ code: myCodeMirror.getValue() }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log(data.result);  // 服务器返回的执行结果
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+      });
   }
 });

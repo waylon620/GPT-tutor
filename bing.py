@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify
 import json
 import asyncio
-# import micropip
-# import ssl
+import subprocess
+import os
 from EdgeGPT.EdgeGPT import Chatbot, ConversationStyle
 from flask_cors import CORS
 # import js
@@ -36,11 +36,29 @@ def processInput():
     # response.headers.add('Access-Control-Allow-Origin', 'http://127.0.0.1:8000')
     return response
 
+@app.route('/compilePython', methods=['POST'])
+def compile_python():
+    try:
+        data = request.get_json()
+        python_code = data['code']
+
+        with open('code/code.py', 'w') as code_file:
+            code_file.write(python_code)
+
+        # 执行Python代码
+        command = 'python code/code.py'
+        result = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT, universal_newlines=True)
+
+        return jsonify({'result': result.strip()})
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
 # async def loadPkg():
 #     await micropip.install("ssl")
 #     from EdgeGPT.EdgeGPT import Chatbot, ConversationStyle
 
 if __name__ == '__main__':
+    os.makedirs('code', exist_ok=True)
     app.run(debug=True, port=5000)
     input_ = "Hello, tell me what can you do"
     # response = bingChat(input_)
