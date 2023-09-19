@@ -330,7 +330,57 @@ pre {
   }
 }
 
-
 .message-chat {
   background-color: #fff;
+}
+
+#suggestion-container{
+  display: flex;
+  /* border: 1px solid black; */
+}
+
+#suggestion-list {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-left: 70px;
+}
+
+#suggestion-list > div {
+  text-align: left;
+  margin: 2px 0px;
+}
+
+.suggestion-btn {
+  background: #F8F0E5;
+  cursor: pointer;
+  transition: background 0.23s;
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  outline: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+  text-align: center;
+}
+
+.suggestion-btn:hover {
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+}
+
+.suggestion-removed {
+  animation: opacity 0.5s linear reverse;
+}
+
+.suggestion-added {
+  animation: opacity 0.5s linear;
+}
+
+@keyframes opacity {
+  0% {
+      opacity: 0;
+  }
+  100% {
+      opacity: 1;
+  }
 }

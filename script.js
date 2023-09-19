@@ -37,6 +37,8 @@ const studentData = {
 
 const dbLocalHostUrl = 'http://localhost:8888/';
 
+var suggestionBox = null;
+
 ///////////////
 // Functions //
 ///////////////
@@ -212,6 +214,8 @@ async function getTutorResponse(msgText, from_modified) {
 
     addToHistory("user" ,msgText ,user_time);
     addToHistory("assistant" ,response ,formatDate(new Date()));
+
+    getSuggestion();
   } catch (error) {
     // Handle any errors that occur during the GPT_api call
     console.error(error);
@@ -1203,3 +1207,135 @@ document.addEventListener("keydown", function(event) {
       });
   }
 });
+
+
+async function getSuggestion() {
+
+  suggestionBox = createSuggestionContainer();
+  // const pre = container.pre
+  // const suggestionBox = container.suggestionBox
+
+  // let fullResponse = '';
+
+  const requestBody = {
+    model: 'gpt-3.5-turbo',
+    messages: [
+      // {
+      //   role: 'system',
+      //   content: `*Role*
+      //   Behave as a coding tutor with the following qualities:
+      //   - Be inspiring, patient, and professional.
+      //   - Use structured content and bullet points to enhance clarity.
+      //   - Encourage thought-provoking questions to foster insight.
+      //   - Don't give too detailed step-by-step guides if they are not asked for.
+      //   - Decide how much information to provide based on the student's level of understanding.`
+      // },
+      {
+        role: 'system',
+        content: "!!!DO NOT PROVIDE SOLUTION CODE TO THE STUDENT'S PROBLEM!!!"
+      },
+      { role: 'user', content: studentData.problem },
+      { role: 'user', content: studentData.bing_reply },
+      ...studentData.history.map(messageObj => ({ role: messageObj.role, content: messageObj.content })),
+      { role: 'user', content: `provide 2 other DIFFERENT low to medium level questions that user might need to know.
+      **You only need to provide the questions and IN UNDER 10 WORDS in json object format**, such as: 
+      {
+        "question1": ...,
+        "question2": ...
+      }` }
+    ]
+  };
+
+  const requestOptions = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + apiKey,
+    },
+    body: JSON.stringify(requestBody),
+  };
+
+  let resObj;
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', requestOptions);
+    const fullResponse = await response.json();
+    // console.log(fullResponse)
+    let originalRes = fullResponse.choices[0].message.content;
+    console.log(originalRes)
+    resObj = JSON.parse(originalRes);
+    
+  } catch (error) {
+    // Handle the error case
+    console.log('Error:', error);
+  } 
+  
+  let rarr = "&#8594";
+  let suggestionHTML = `<div>
+  <button class="suggestion-btn suggestion-added" value="${resObj.question1}">
+    <inline style="font-size: 17px;">${rarr}</inline> ${resObj.question1}
+  </button>
+  </div>
+  <div>
+  <button class="suggestion-btn suggestion-added" value="${resObj.question2}">
+    <inline style="font-size: 17px;">${rarr}</inline> ${resObj.question2}
+  </button>
+  </div>`;
+
+  suggestionBox.innerHTML = suggestionHTML;
+  messageChat.scrollTop = messageChat.scrollHeight;
+  let suggestionBtns = document.getElementsByClassName("suggestion-btn");
+  suggestionBtns[0].addEventListener("click", sendSuggestionQ);
+  suggestionBtns[1].addEventListener("click", sendSuggestionQ);
+}
+
+
+function createSuggestionContainer() {
+  const msgHTML = `
+    <div id="suggestion-container">
+      <div id="suggestion-list"></div>
+    </div>
+  `;
+
+  messageChat.insertAdjacentHTML("beforeend", msgHTML);
+  messageChat.scrollTop += 500;
+
+  const messageContainer = messageChat.lastElementChild;
+  const suggestionBox = messageContainer.querySelector('#suggestion-list');
+
+  if (suggestionBox) {
+    return suggestionBox;
+  } else {
+    console.error("Failed to create suggestion container");
+    return null;
+  }
+}
+
+function sendSuggestionQ(e){
+  messageInput.value = e.target.value;
+  let suggestionCont = document.getElementById("suggestion-container");
+  let items_ = document.getElementsByClassName("suggestion-btn");
+  if(suggestionCont){
+    // suggestionCont.classList.add("suggestion-removed");
+    // void true;
+    // suggestionCont.classList.remove("suggestion-added");
+    for (let i=items_.length; i>=1; i--){
+      let item = items_[i-1];
+      item.classList.add("suggestion-removed");
+      void true;
+      item.classList.remove("suggestion-added");
+      setTimeout(()=>{
+          items_[i-1].remove();
+      }, 500);
+    }
+    setTimeout(()=>{
+      suggestionCont.remove();
+      suggestionCont = null;
+      suggestionBox = null;
+    }, 500);
+  } else{
+    console.error("Suggestion Box not found!");
+  }
+  getTutorResponse(messageInput.value, 0);
+
+}
