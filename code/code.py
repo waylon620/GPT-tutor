@@ -2,6 +2,13 @@
 
 # code start
 
-s = "ioiohui"
-abbreviation = s[0] + str(len(s) - 2) + s[-1]
-print(abbreviation)
+def calculate_sum(numbers):
+    total = 0
+    for num in numbers:
+        total += num
+    return total
+
+# Test case
+nums = [3,10]  # Insert your numbers here
+result = calculate_sum(nums)
+print("Sum:", result)

@@ -117,14 +117,15 @@ async function setUser() {
     loading_finished()
     studentData.user_id = id
     console.log("Retrieving studentData of student:" + studentData.user_id)
-
     const chatHis = retrieveChatHistory(id)
-    const userProb = retrieveUserProblem(id)
+    appendMessage(BOT_NAME, BOT_IMG, "left", "Hi, I'm your coding tutor. To start with, please provide your problem in the problem box and you can start your chat with me.",'');
+    const userProb = retrieveUserProblem(id);
     const bingReply = retrieveUserBingReply(id)
     const promises = [chatHis, userProb, bingReply];
     const response = await Promise.all(promises);
     studentData.history = response[0].data.data;
     studentData.problem = response[1].data.data;
+    console.log("userprob",studentData.problem)
     studentData.bing_reply = response[2].data.data;
 
     reconstructChatHistory(studentData.history)
@@ -156,6 +157,7 @@ async function getTutorResponse(msgText, from_modified) {
 
   if(studentData.problem == "") {
     window.alert("Please provide your problem description.");
+    loading_finished()
     return;
   }
   
@@ -259,7 +261,7 @@ async function requestChatGptApi(message, tutorInstruction = '') {
       { role: 'user', content: 'user problem: '+ studentData.problem + '\n user input: ' + message + "!!!DO NOT generate answer code or snippet code to STUDENT'S PROBLEM!!!"}
     ],
     stream: true,
-    // max_tokens: 50,
+    max_tokens: 300,
   };
 
   const requestOptions = {
@@ -585,7 +587,7 @@ function createMessageContainerHTML(name, img, side, time) {
  * @returns 
  */
 function appendMessage(name, img, side, text ,time) {
-  var time = formatDate(new Date());
+  // var time = formatDate(new Date());
   var msgHTML = ''
   if(side == 'right'){
     msgHTML = `
@@ -682,6 +684,10 @@ function modifyMessage(messageElement) {
 // TODO: unclear what these two function does
 function addToHistory(role, content,time) {
     studentData.history.push({ role: role, content: content,time:time });
+}
+function addToHistory_front(role, content,time) {
+   studentData.history.unshift({ role: role, content: content, time: time });
+
 }
 
 
@@ -854,7 +860,6 @@ async function retrieveChatHistory(id) {
 function reconstructChatHistory(chatHistory) {
   try {
     if (chatHistory.length > 0) {
-      messageChat.innerHTML = ''; // Clear the chat interface
       studentData.history = [];
 
       for (const item of chatHistory) {
