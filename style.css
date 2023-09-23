@@ -20,14 +20,23 @@ html {
 }
 
 /* Body Styles */
-body {
+/* body {
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
   background-image: var(--body-bg);
   font-family: Helvetica, Arial, sans-serif;
+} */
+body {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr; /* 划分为三列，中间一列宽度自适应 */
+  height: 100vh;
+  margin: 0;
+  background-image: var(--body-bg);
+  font-family: Helvetica, Arial, sans-serif;
 }
+
 
 pre {
   white-space: pre-wrap;
@@ -35,14 +44,46 @@ pre {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+
+.CodeMirror-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-right: 20px; /* 调整右侧边距 */
+  /* New styles for positioning */
+  position: absolute;
+  top: 50%; /* Adjust this value to position it vertically */
+  transform: translateY(-50%); /* Center it vertically */
+}
+.CodeMirror-scroll {
+  width: 100%; /* Set it to 100% to match the width of the first column */
+}
+
+.left-container {
+  display: grid;
+  grid-template-rows: 1fr auto 1fr;
+  height: 100vh; /* This makes the container take up the full viewport height */
+}
+
+.middle-row {
+  grid-row: 2;
+}
+.bottom-row {
+  grid-row: 3;
+}
+
+
 /* Message Container Styles */
 .message-container {
+  grid-column: 2; /* Occupying the second column (center) */
   display: flex;
   flex-flow: column wrap;
   justify-content: space-between;
   width: 700px;
   margin: 25px 10px;
-  height: calc(100% - 50px);
+  /* height: calc(100% - 50px); */
+  max-height: 95vh;
   border: var(--border);
   border-radius: 10px;
   background: var(--message-container-bg);
@@ -116,6 +157,14 @@ pre {
 
 .message-info-time {
   font-size: 0.85em;
+  margin: 0; /* Remove margin */
+}
+.edit-btn {
+  cursor: pointer;
+}
+.time-and-edit {
+  display: flex; /* Use flexbox for the right side container */
+  align-items: center; /* Vertically align its children */
 }
 
 .message-text {
@@ -153,6 +202,7 @@ pre {
   margin: 0 5px;
   color: #999;
   font-size: 12px;
+  text-align: right; /* Align the text to the right */
 }
 
 /* Message Input Area Styles */
@@ -280,7 +330,57 @@ pre {
   }
 }
 
-
 .message-chat {
   background-color: #fff;
+}
+
+#suggestion-container{
+  display: flex;
+  /* border: 1px solid black; */
+}
+
+#suggestion-list {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-left: 70px;
+}
+
+#suggestion-list > div {
+  text-align: left;
+  margin: 2px 0px;
+}
+
+.suggestion-btn {
+  background: #F8F0E5;
+  cursor: pointer;
+  transition: background 0.23s;
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  outline: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+  text-align: center;
+}
+
+.suggestion-btn:hover {
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+}
+
+.suggestion-removed {
+  animation: opacity 0.5s linear reverse;
+}
+
+.suggestion-added {
+  animation: opacity 0.5s linear;
+}
+
+@keyframes opacity {
+  0% {
+      opacity: 0;
+  }
+  100% {
+      opacity: 1;
+  }
 }
