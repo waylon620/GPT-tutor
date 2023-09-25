@@ -118,14 +118,13 @@ async function setUser() {
     studentData.user_id = id
     console.log("Retrieving studentData of student:" + studentData.user_id)
     const chatHis = retrieveChatHistory(id)
-    appendMessage(BOT_NAME, BOT_IMG, "left", "Hi, I'm your coding tutor. To start with, please provide your problem in the problem box and you can start your chat with me.",'');
+    appendMessage(BOT_NAME, BOT_IMG, "left", "Hi, I'm your coding tutor. To begin, please fill in your problem in the problem box, and feel free to start your chat with me.",'');
     const userProb = retrieveUserProblem(id);
-    const bingReply = retrieveUserBingReply(id)
+    const bingReply = retrieveUserBingReply(id);
     const promises = [chatHis, userProb, bingReply];
     const response = await Promise.all(promises);
     studentData.history = response[0].data.data;
     studentData.problem = response[1].data.data;
-    console.log("userprob",studentData.problem)
     studentData.bing_reply = response[2].data.data;
 
     reconstructChatHistory(studentData.history)
@@ -142,6 +141,9 @@ async function setUser() {
 function clearChatHistory() {
   messageChat.innerHTML = ''; // Clear the chat interface
   studentData.history = [];
+  studentData.problem = "";
+  studentData.bing_reply = "";
+  studentData.type = "default";
   UpdateChatHistoryToDB();
 }
 
@@ -171,35 +173,34 @@ async function getTutorResponse(msgText, from_modified) {
   if (questionType == "U") {
     //undesired output
     tutorInstruction = `*Instruction*
-  The goal is to provide a hint to help the student diagnose why their code is producing an undesired output with the input provided by the student. Below are the detailed steps you need to follow:
-  1. Ask the student about the intention of the code they provide if the student didn't say it in the question. e.g. "Can you explain how you think your code should work? "
-  2. You can ask the student to add \`print(...)\` in the code and specify the position and what to print. Or you can provide test cases which are different from those provided by the student, and then ask the student to run the code for you to help debug.
-  3. After those, pose thought-provoking questions, and list out any potential pitfalls or logical errors that might be causing the unexpected output.
-  4. The problem that can be fixed with less code or is easier to fix should be addressed first.`;
+    The goal is to provide a hint to help the student diagnose why their code is producing an undesired output with the input provided by the student. Below are the detailed steps you need to follow:
+    1. If you cannot understand the problem and the student didn't provide his expect output, please tell the sudent to provide his expect ouput.
+    2. Pose thought-provoking questions, and list the most potential pitfall or logical error that might cause the unexpected output.
+    3. The problem that can be fixed with less code or is easier to fix should be addressed first.`;
   } else if (questionType == "H") {
     //hint
     tutorInstruction = `*Instruction*
-  Provide hint for the student to solve their problem, and below are the rules you should follow:
-  1. Only provide ONE step that the student should do with easy-to-understand language and make your response short as possible.
-  2. Generate next step ONLY if the student can understand the first step.
-  3. Give a neat general idea if the student asked.
-  4. List out the keywords for coding knowledge that may be applied to the student's question or this coding problem.
-  5. Ask the student if they can understand or provide an easy coding test with "xxx" for student to fill at the end.`;
+    Provide hint for the student to solve their problem, and below are the rules you should follow:
+    1. Only provide ONE step that the student should do with easy-to-understand language and make your response short as possible.
+    2. Generate next step ONLY if the student can understand the first step.
+    3. Give a neat general idea if the student asked.
+    4. List out the keywords for coding knowledge that may be applied to the student's question or this coding problem.
+    5. Ask the student if they can understand or provide an easy coding test with "xxx" for student to fill at the end.`;
   } else if (questionType == "C") {
     //compile error
     tutorInstruction = `*Instruction*
-  The goal is to provide a hint to help the student diagnose why their code is having a compile error. Below are the detailed steps you need to follow:
-  1. Explain the error message provided by the compiler.
-  2. Review syntax, variable names, and data types, and if that's the reason causing the compile error, tell the student to check for it with questions.
-  3. Pose thought-provoking questions, and list out any potential pitfalls or logical errors that might be causing the compile error.`;
+    The goal is to provide a hint to help the student diagnose why their code is having a compile error. Below are the detailed steps you need to follow:
+    1. Explain the error message provided by the compiler.
+    2. Review syntax, variable names, and data types, and if that's the reason causing the compile error, tell the student to check for it with questions.
+    3. Pose thought-provoking questions, and list out any potential pitfalls or logical errors that might be causing the compile error.`;
   } else if (questionType == "N") {
     //no AC
     tutorInstruction = `*Instruction*
-  Provide a hint to help the student optimize their code and address issues causing it not to get accepted on the online judge. Below are the detailed steps you need to follow:
-  1. If there's a time limit exceeded (TLE), then assume the logic of the code is correct and provide hints to help the student optimize the efficiency of the code, and then skip the below steps.
-  2. If there's no TLE, then for each small part of the code provided by the student. Imagine different scenarios that might cause it to fail on the online judge. Consider the logic, edge cases, and potential bottlenecks in the algorithm.
-  3. Encourage the student to review the problem requirements and trace the code to ensure it meets those requirements.
-  4. You can ask the student to add \`print(...)\` in the code and specify the position and what to print. Or you can provide test cases which are different from those provided by the student, and then ask the student to run the code for you to help debug.`;
+    Provide a hint to help the student optimize their code and address issues causing it not to get accepted on the online judge. Below are the detailed steps you need to follow:
+    1. If there's a time limit exceeded (TLE), then assume the logic of the code is correct and provide hints to help the student optimize the efficiency of the code, and then skip the below steps.
+    2. If there's no TLE, then for each small part of the code provided by the student. Imagine different scenarios that might cause it to fail on the online judge. Consider the logic, edge cases, and potential bottlenecks in the algorithm.
+    3. Encourage the student to review the problem requirements and trace the code to ensure it meets those requirements.
+    4. You can ask the student to add \`print(...)\` in the code and specify the position and what to print. Or you can provide test cases which are different from those provided by the student, and then ask the student to run the code for you to help debug.`;
   } else {
     // Universal prompt (default)
   }
