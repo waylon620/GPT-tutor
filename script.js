@@ -930,6 +930,7 @@ messageSendButton.addEventListener("click", (event) => {
   event.preventDefault();
   if(messageInput.value!=""){
     messageChat.scrollTop = messageChat.scrollHeight;
+    removeSuggestCont();
     getTutorResponse(messageInput.value,0);
   
     if(test_flag == 1){
@@ -1319,6 +1320,12 @@ function createSuggestionContainer() {
 
 function sendSuggestionQ(e){
   messageInput.value = e.target.value;
+  removeSuggestCont();
+  getTutorResponse(messageInput.value, 0);
+
+}
+
+function removeSuggestCont(){
   let suggestionCont = document.getElementById("suggestion-container");
   let items_ = document.getElementsByClassName("suggestion-btn");
   if(suggestionCont){
@@ -1342,6 +1349,4 @@ function sendSuggestionQ(e){
   } else{
     console.error("Suggestion Box not found!");
   }
-  getTutorResponse(messageInput.value, 0);
-
 }
