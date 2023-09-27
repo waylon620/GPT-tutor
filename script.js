@@ -881,9 +881,6 @@ function reconstructChatHistory(chatHistory) {
   }
 }
 
-
-
-
 /**
  * Post a json file to the server 
  *  
