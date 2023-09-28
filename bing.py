@@ -41,13 +41,13 @@ def compile_python():
     try:
         data = request.get_json()
         python_code = data['code']
-
+        input_data = data.get('input', '')
         with open('code/code.py', 'w') as code_file:
             code_file.write(python_code)
 
         # 执行Python代码
         command = 'python code/code.py'
-        result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+        result = subprocess.run(command, input=input_data, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
 
         # 检查是否有错误消息
         if result.returncode != 0:
@@ -61,11 +61,6 @@ def compile_python():
     except Exception as e:
         # 捕获其他异常
         return jsonify({'error': str(e)})
-    #     result = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT, universal_newlines=True)
-
-    #     return jsonify({'result': result.strip()})
-    # except Exception as e:
-    #     return jsonify({'error': str(e)})
 
 if __name__ == '__main__':
     os.makedirs('code', exist_ok=True)

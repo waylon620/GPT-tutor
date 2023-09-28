@@ -104,6 +104,7 @@ async function getProblemDescription() {
       requestBingApi(promptForBing);
 
       loading_finished();
+      appendMessage(BOT_NAME, BOT_IMG, "left", "Great! I have your problem now.\nFeel free to start asking me questions about it.",'');
   }
 }
 
@@ -118,7 +119,8 @@ async function setUser() {
     studentData.user_id = id
     console.log("Retrieving studentData of student:" + studentData.user_id)
     const chatHis = retrieveChatHistory(id)
-    appendMessage(BOT_NAME, BOT_IMG, "left", "Hi, I'm your coding tutor. To begin, please fill in your problem in the problem box, and feel free to start your chat with me.",'');
+    appendMessage(BOT_NAME, BOT_IMG, "left", "Hi, I'm your coding tutor. To begin, please fill in your problem in the problem box, and feel free to start your chat with me.\n"
+    + "For example, you can fill in:\n*Description: Given an integer x, return true if x is a palindrome, and false otherwise.*",'');
     const userProb = retrieveUserProblem(id);
     const bingReply = retrieveUserBingReply(id);
     const promises = [chatHis, userProb, bingReply];
@@ -253,7 +255,7 @@ async function requestChatGptApi(message, tutorInstruction = '') {
       },
       {
         role: 'system',
-        content: "!!!DO NOT generate answer code or snippet code to STUDENT'S PROBLEM!!!"
+        content: "!!!You can provide Stub python code, but DO NOT generate answer code to STUDENT'S PROBLEM!!!"
       },
       { role: 'user', content: tutorInstruction },
       { role: 'user', content: studentData.problem },
@@ -353,7 +355,44 @@ async function requestChatGptApi(message, tutorInstruction = '') {
               const middleRow = document.querySelector(".middle-row");
               // Create the form element
               const form = document.createElement("form");
+              const submit = document.createElement("button");
+              submit.textContent = "Submit";
+              submit.className = "code-submit-button";
+              submit.addEventListener("click", function() {
+                const code = myCodeMirror.getValue();
+                const input = document.getElementById("coding-input-area").value; // Get the input from an input field with id "inputField"
+            
+                // Check if input is provided, and only include it in the JSON payload if it's not empty
+                const requestData = { code: code };
+                if (input.trim() !== "") {
+                  requestData.input = input.trim();
+                }
+            
+                fetch('http://localhost:5000/compilePython', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(requestData),
+                })
+                .then((response) => response.json())
+                .then((data) => {
+                  if(data.error){
+                    const outputElement = document.getElementById("output");
+                    outputElement.textContent =  data.error;
+                  }
+                  else{
+                    const outputElement = document.getElementById("output");
+                    outputElement.textContent =  data.result;
+                  }
+                  console.log(data.error);
+                })
+                .catch((error) => {
+                  console.error('Error:', error);
+                });
+              });
               form.setAttribute("action", "");
+              form.className = "coding-form";
 
               // Create the textarea element
               const textarea = document.createElement("textarea");
@@ -364,7 +403,24 @@ async function requestChatGptApi(message, tutorInstruction = '') {
               form.appendChild(textarea);
 
               // Append the form to the middle-row div
-              middleRow.appendChild(form);
+              const middleRow_div = document.createElement("div");
+              middleRow_div.className = "middle-row-container";
+              middleRow_div.appendChild(form);
+              
+              // add an input area
+              const divElement = document.createElement("div");
+              divElement.className = "flex-container";
+              const inputElement = document.createElement("input");
+              inputElement.type = "text";
+              inputElement.id = "coding-input-area";
+              inputElement.className = "coding-input-area";
+              inputElement.classList.add("message-input-area");
+              inputElement.placeholder = "Enter your input(optional)...";
+              divElement.appendChild(inputElement);
+              divElement.appendChild(submit);
+              middleRow_div.appendChild(divElement);
+
+              middleRow.appendChild(middleRow_div);
 
               var el = document.getElementById("editor");
               var codeStart = "# version: Python3\n\n# code start\n\n";
@@ -397,8 +453,9 @@ async function requestChatGptApi(message, tutorInstruction = '') {
               const bottomRow = document.querySelector(".bottom-row");
               const outputContainer = document.createElement("div");
               outputContainer.id = "output-container";
+              outputContainer.className = "output-container";
               const heading = document.createElement("h2");
-              heading.textContent = "Output:";
+              heading.textContent = "Output :";
 
               // Create a <pre> element for displaying the output
               const outputElement = document.createElement("pre");
@@ -414,46 +471,63 @@ async function requestChatGptApi(message, tutorInstruction = '') {
             else{
               const middleRow = document.querySelector(".middle-row");
               // Get a reference to the child form element
+              const middleRow_div = middleRow.querySelector("div");
               const form = middleRow.querySelector("form");
+              const ip = middleRow.querySelector("input");
+              const submit = middleRow.querySelector("button");
 
               // Remove the form element from the middle-row
-              middleRow.removeChild(form);
+              // middleRow.removeChild(form);
+              // middleRow.removeChild(ip);
+              // middleRow.removeChild(submit);
+              middleRow.removeChild(middleRow_div);
 
               const bottomRow = document.querySelector(".bottom-row");
               const outputContainer = bottomRow.querySelector("div");
               bottomRow.removeChild(outputContainer)
-
+              
+              // middleRow.removeChild();
               test_flag = 0
             }
         };
-
+        
         
         document.addEventListener("keydown", function(event) {
           if (event.shiftKey && event.key === "Enter" && test_flag) {
-              fetch('http://localhost:5000/compilePython', {
+            const code = myCodeMirror.getValue();
+            const input = document.getElementById("coding-input-area").value; // Get the input from an input field with id "inputField"
+        
+            // Check if input is provided, and only include it in the JSON payload if it's not empty
+            const requestData = { code: code };
+            if (input.trim() !== "") {
+              requestData.input = input.trim();
+            }
+        
+            fetch('http://localhost:5000/compilePython', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify({ code: myCodeMirror.getValue() }),
+              body: JSON.stringify(requestData),
             })
-              .then((response) => response.json())
-              .then((data) => {
-                if(data.error){
-                  const outputElement = document.getElementById("output");
-                  outputElement.textContent =  data.error;
-                }
-                else{
-                  const outputElement = document.getElementById("output");
-                  outputElement.textContent =  data.result;
-                }
-                console.log(data.error);
-              })
-              .catch((error) => {
-                console.error('Error:', error);
-              });
+            .then((response) => response.json())
+            .then((data) => {
+              if(data.error){
+                const outputElement = document.getElementById("output");
+                outputElement.textContent =  data.error;
+              }
+              else{
+                const outputElement = document.getElementById("output");
+                outputElement.textContent =  data.result;
+              }
+              console.log(data.error);
+            })
+            .catch((error) => {
+              console.error('Error:', error);
+            });
           }
         });
+        
       // Insert the button after the 'pre' element
       pre.insertAdjacentElement("afterend", button);
       } else {
@@ -935,10 +1009,16 @@ messageSendButton.addEventListener("click", (event) => {
     if(test_flag == 1){
       const middleRow = document.querySelector(".middle-row");
       // Get a reference to the child form element
+      const middleRow_div = middleRow.querySelector("div");
       const form = middleRow.querySelector("form");
+      const ip = middleRow.querySelector("input");
+      const submit = middleRow.querySelector("button");
   
       // Remove the form element from the middle-row
-      middleRow.removeChild(form);
+      // middleRow.removeChild(form);
+      // middleRow.removeChild(ip);
+      // middleRow.removeChild(submit);
+      middleRow.removeChild(middleRow_div);
   
       const bottomRow = document.querySelector(".bottom-row");
       const outputContainer = bottomRow.querySelector("div");
@@ -1190,29 +1270,6 @@ messageChat.addEventListener("click", (event) => {
 // };
 
 
-
-
-
-
-
-document.addEventListener("keydown", function(event) {
-  if (event.shiftKey && event.key === "Enter" && test_flag) {
-      fetch('http://localhost:5000/compilePython', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ code: myCodeMirror.getValue() }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log(data.result);  // 服务器返回的执行结果
-      })
-      .catch((error) => {
-        console.error('Error:', error);
-      });
-  }
-});
 
 
 async function getSuggestion() {
