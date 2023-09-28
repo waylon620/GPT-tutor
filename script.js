@@ -492,41 +492,41 @@ async function requestChatGptApi(message, tutorInstruction = '') {
         };
         
         
-        document.addEventListener("keydown", function(event) {
-          if (event.shiftKey && event.key === "Enter" && test_flag) {
-            const code = myCodeMirror.getValue();
-            const input = document.getElementById("coding-input-area").value; // Get the input from an input field with id "inputField"
+        // document.addEventListener("keydown", function(event) {
+        //   if (event.shiftKey && event.key === "Enter" && test_flag) {
+        //     const code = myCodeMirror.getValue();
+        //     const input = document.getElementById("coding-input-area").value; // Get the input from an input field with id "inputField"
         
-            // Check if input is provided, and only include it in the JSON payload if it's not empty
-            const requestData = { code: code };
-            if (input.trim() !== "") {
-              requestData.input = input.trim();
-            }
+        //     // Check if input is provided, and only include it in the JSON payload if it's not empty
+        //     const requestData = { code: code };
+        //     if (input.trim() !== "") {
+        //       requestData.input = input.trim();
+        //     }
         
-            fetch('http://localhost:5000/compilePython', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(requestData),
-            })
-            .then((response) => response.json())
-            .then((data) => {
-              if(data.error){
-                const outputElement = document.getElementById("output");
-                outputElement.textContent =  data.error;
-              }
-              else{
-                const outputElement = document.getElementById("output");
-                outputElement.textContent =  data.result;
-              }
-              console.log(data.error);
-            })
-            .catch((error) => {
-              console.error('Error:', error);
-            });
-          }
-        });
+        //     fetch('http://localhost:5000/compilePython', {
+        //       method: 'POST',
+        //       headers: {
+        //         'Content-Type': 'application/json',
+        //       },
+        //       body: JSON.stringify(requestData),
+        //     })
+        //     .then((response) => response.json())
+        //     .then((data) => {
+        //       if(data.error){
+        //         const outputElement = document.getElementById("output");
+        //         outputElement.textContent =  data.error;
+        //       }
+        //       else{
+        //         const outputElement = document.getElementById("output");
+        //         outputElement.textContent =  data.result;
+        //       }
+        //       console.log(data.error);
+        //     })
+        //     .catch((error) => {
+        //       console.error('Error:', error);
+        //     });
+        //   }
+        // });
         
       // Insert the button after the 'pre' element
       pre.insertAdjacentElement("afterend", button);
