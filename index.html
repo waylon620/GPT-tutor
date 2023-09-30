@@ -50,7 +50,8 @@
         </main>
       
         <div class="message-input-area">
-          <input type="text" class="message-input" placeholder="Enter your message...">
+          <!-- <input type="text" class="message-input" placeholder="Enter your message..."> -->
+          <textarea class="message-input" id="auto-expanding-input" placeholder="Enter your message..." rows="1" cols="50" oninput="autoExpand(this)"></textarea>
           <button id="message-send-button" type="button" class="message-send-button">Send</button>
           <!-- <button id="bing-button" class="message-send-button">Bing</button> -->
         </div>
@@ -77,6 +78,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.24.0/axios.js"></script>
 
     <script type="module" src="./script.js"></script>
+
+    <script>
+      function autoExpand(textarea) {
+        textarea.style.height = "auto";
+        textarea.style.height = textarea.scrollHeight + "px";
+      }
+    </script>
 
 </body>
 </html>

@@ -438,3 +438,8 @@ pre {
       opacity: 1;
   }
 }
+
+#auto-expanding-input {
+  min-height: 30px; /* Adjust as needed */
+  max-height: 110px; /* Adjust as needed */
+}

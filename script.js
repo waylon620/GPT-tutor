@@ -184,9 +184,9 @@ async function getTutorResponse(msgText, from_modified) {
     tutorInstruction = `*Instruction*
     Provide hint for the student to solve their problem, and below are the rules you should follow:
     1. Only provide ONE step that the student should do with easy-to-understand language and make your response short as possible.
-    2. Generate next step ONLY if the student can understand the first step.
+    2. Generate next step if the student can understand the current step, otherwise just give easy concept of current step.
     3. Give a neat general idea if the student asked.
-    4. List out the keywords for coding knowledge that may be applied to the student's question or this coding problem.
+    4. List out few keywords for coding knowledge that may be applied to the student's question or this coding problem.
     5. Ask the student if they can understand or provide an easy coding test with "xxx" for student to fill at the end.`;
   } else if (questionType == "C") {
     //compile error
@@ -194,7 +194,7 @@ async function getTutorResponse(msgText, from_modified) {
     The goal is to provide a hint to help the student diagnose why their code is having a compile error. Below are the detailed steps you need to follow:
     1. Explain the error message provided by the compiler.
     2. Review syntax, variable names, and data types, and if that's the reason causing the compile error, tell the student to check for it with questions.
-    3. Pose thought-provoking questions, and list out any potential pitfalls or logical errors that might be causing the compile error.`;
+    3. If the user asks about potential error causes, provide a list of critical pitfalls or logical errors that could be responsible for the compilation error.`;
   } else if (questionType == "N") {
     //no AC
     tutorInstruction = `*Instruction*
@@ -205,6 +205,9 @@ async function getTutorResponse(msgText, from_modified) {
     4. You can ask the student to add \`print(...)\` in the code and specify the position and what to print. Or you can provide test cases which are different from those provided by the student, and then ask the student to run the code for you to help debug.`;
   } else {
     // Universal prompt (default)
+    tutorInstruction = `*Instruction*
+    Be a kind and patient computer science coding tutor~~~
+    `;
   }
 
   loading_finished()
@@ -217,7 +220,7 @@ async function getTutorResponse(msgText, from_modified) {
     const response = await requestChatGptApi(msgText, tutorInstruction);
     // var ai_time = tutorResponse(response);
 
-    addToHistory("user" ,msgText ,user_time);
+    if(from_modified != 2)addToHistory("user" ,msgText ,user_time);
     addToHistory("assistant" ,response ,formatDate(new Date()));
 
     getSuggestion();
@@ -253,14 +256,14 @@ async function requestChatGptApi(message, tutorInstruction = '') {
         - please make your response short and NEAT.
         - Don't give detailed step-by-step guides if they are not asked for.`
       },
-      {
-        role: 'system',
-        content: "!!!You can provide Stub python code, but DO NOT generate answer code to STUDENT'S PROBLEM!!!"
-      },
-      { role: 'user', content: tutorInstruction },
       { role: 'user', content: studentData.problem },
       { role: 'user', content: studentData.bing_reply },
       ...studentData.history.map(messageObj => ({ role: messageObj.role, content: messageObj.content })),
+      {
+        role: 'system',
+        content: "!!!You can provide Python stub code, but DO NOT generate answer code to STUDENT'S PROBLEM!!!"
+      },
+      { role: 'system', content: tutorInstruction },
       { role: 'user', content: 'user problem: '+ studentData.problem + '\n user input: ' + message + "!!!DO NOT generate answer code or snippet code to STUDENT'S PROBLEM!!!"}
     ],
     stream: true,
@@ -380,6 +383,7 @@ async function requestChatGptApi(message, tutorInstruction = '') {
                   if(data.error){
                     const outputElement = document.getElementById("output");
                     outputElement.textContent =  data.error;
+                    getTutorResponse(data.error,2);
                   }
                   else{
                     const outputElement = document.getElementById("output");
@@ -570,10 +574,11 @@ async function getQuestionType(message){
     - Hint (Give student good guidance that is thought-provoking, and provide related concepts)
     - Compile error (Help student find bugs in the code and needed knowledge related to the error message)
     - Not getting AC (Help student find the underlying problem that might lead to not passing all the test cases on the online judge system)
-    If the user's question is too short or hard to classify, just reply "default"
+    If the user's question is too short or hard to classify, just reply "D" for default.
     !!!Only contain the first character of the name of that type in your response!!!
     e.g. Question: Why is the code having a compile error? You: C (since it's a compile error)
-    Question: Only 9 of 17 test cases are accepted, why? You: N (since it's not getting AC)
+    e.g. Question: Only 9 of 17 test cases are accepted, why? You: N (since it's not getting AC)
+    e.g. Question: why I got all threes instead of "1,2,3"? You: U (since it's Undesired output)
     ----
     *Question*`;
 
@@ -1004,32 +1009,32 @@ messageSendButton.addEventListener("click", (event) => {
     removeSuggestCont();
     getTutorResponse(messageInput.value,0);
   
-    if(test_flag == 1){
-      const middleRow = document.querySelector(".middle-row");
-      // Get a reference to the child form element
-      const middleRow_div = middleRow.querySelector("div");
-      const form = middleRow.querySelector("form");
-      const ip = middleRow.querySelector("input");
-      const submit = middleRow.querySelector("button");
+    // if(test_flag == 1){
+    //   const middleRow = document.querySelector(".middle-row");
+    //   // Get a reference to the child form element
+    //   const middleRow_div = middleRow.querySelector("div");
+    //   const form = middleRow.querySelector("form");
+    //   const ip = middleRow.querySelector("input");
+    //   const submit = middleRow.querySelector("button");
   
-      // Remove the form element from the middle-row
-      // middleRow.removeChild(form);
-      // middleRow.removeChild(ip);
-      // middleRow.removeChild(submit);
-      middleRow.removeChild(middleRow_div);
+    //   // Remove the form element from the middle-row
+    //   // middleRow.removeChild(form);
+    //   // middleRow.removeChild(ip);
+    //   // middleRow.removeChild(submit);
+    //   middleRow.removeChild(middleRow_div);
   
-      const bottomRow = document.querySelector(".bottom-row");
-      const outputContainer = bottomRow.querySelector("div");
-      bottomRow.removeChild(outputContainer)
+    //   const bottomRow = document.querySelector(".bottom-row");
+    //   const outputContainer = bottomRow.querySelector("div");
+    //   bottomRow.removeChild(outputContainer)
   
-      test_flag = 0
-    }
+    //   test_flag = 0
+    // }
   }
   });
 
 
 messageInput.addEventListener("keydown", function(event) {
-  if (event.key === "Enter") {
+  if (event.key === "Enter" && !event.shiftKey) {
     event.preventDefault()
     messageSendButton.click();
   }
@@ -1404,3 +1409,13 @@ function removeSuggestCont(){
     console.error("Suggestion Box not found!");
   }
 }
+
+
+// function autoExpand(textarea) {
+//   // Reset the textarea's height to the default (1 row) to calculate the new height
+//   textarea.style.height = "auto";
+
+//   // Calculate the new height based on the scroll height of the content
+//   textarea.style.height = textarea.scrollHeight + "px";
+// }
+
