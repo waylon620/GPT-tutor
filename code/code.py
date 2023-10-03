@@ -2,22 +2,17 @@
 
 # code start
 
-def count_vowels(input_string):
-    vowels = ['a', 'e', 'i', 'o', 'u']
-    count = 0
-    
-    # Iterate over each character in the input string
-    for char in input_string:
-        if char.lower() in vowels:
-            count += 1
-    
-    return count
+def reverse_string(input_string):
+    # Initialize an empty string to store the reversed string
+	reversed_string = "jijiji"
+	hi = ''
+	for i in range(len(reversed_string)):
+		hi += reversed_string[len(reversed_string) - i - 1]
+		
+	print(hi)
+		
+reverse_string("po")
 
-# Prompt the user to enter a string
-user_input = input("Enter a string: ")
+    # TODO: Iterate over the characters in the input string and append them to the reversed string in reverse order
 
-# Call the count_vowels function with the user input
-vowel_count = count_vowels(user_input)
-
-# Print the count of vowels in the string
-print("Number of vowels:", vowel_count)
+    # Return the reversed string

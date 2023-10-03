@@ -12,50 +12,52 @@
 </head>
 <body>
     <div id="loader" class="center"></div>
-    <div class="left-container">
-      <div class="top-row">
-        <!-- Content for the top row -->
-      </div>
-      <div class="middle-row">
-        <!-- <form action="">
-          <textarea id="editor" class="editor"></textarea>
-        </form> -->
-      </div>
-      <div class="bottom-row">
-        <!-- <button id="test" class="test_btn">click</button> -->
-      </div>
-    </div>
-    <section class="message-container">
-        <header class="message-header">
-          <div class="message-header-title">
-            <i class="fas fa-comment-alt"></i> GPT-Tutor
-            <!-- <select id="problem-type">
-                <option value="default">Select Problem Type</option>
-                <option value="type1">Coding Error</option>
-                <option value="type2">Problem Solving Tips</option>
-                <option value="type3">How to Get AC</option>
-            </select> -->
-          </div>
-          <div class="message-header-buttons">
-            <button id="problem-input-button">Problem</button>
-            <button id="user-id-button">User</button>
-            <button id="clear-button" class="clear-button">Clear</button>
-          </div>
-          <div class="message-header-options">
-            <span><i class="fas fa-cog"></i></span>
-          </div>
-        </header>
-      
-        <main class="message-chat">
-        </main>
-      
-        <div class="message-input-area">
-          <!-- <input type="text" class="message-input" placeholder="Enter your message..."> -->
-          <textarea class="message-input" id="auto-expanding-input" placeholder="Enter your message..." rows="1" cols="50" oninput="autoExpand(this)"></textarea>
-          <button id="message-send-button" type="button" class="message-send-button">Send</button>
-          <!-- <button id="bing-button" class="message-send-button">Bing</button> -->
+    <!-- <div style="display: flex; justify-content: center";> -->
+      <div class="left-container">
+        <div class="top-row">
+          <!-- Content for the top row -->
         </div>
+        <div class="middle-row">
+          <!-- <form action="">
+            <textarea id="editor" class="editor"></textarea>
+          </form> -->
+        </div>
+        <div class="bottom-row">
+          <!-- <button id="test" class="test_btn">click</button> -->
+        </div>
+      </div>
+      <section class="message-container">
+          <header class="message-header">
+            <div class="message-header-title">
+              <i class="fas fa-comment-alt"></i> GPT-Tutor
+              <!-- <select id="problem-type">
+                  <option value="default">Select Problem Type</option>
+                  <option value="type1">Coding Error</option>
+                  <option value="type2">Problem Solving Tips</option>
+                  <option value="type3">How to Get AC</option>
+              </select> -->
+            </div>
+            <div class="message-header-buttons">
+              <button id="problem-input-button">Problem</button>
+              <button id="user-id-button">User</button>
+              <button id="clear-button" class="clear-button">Clear</button>
+            </div>
+            <div class="message-header-options">
+              <span><i class="fas fa-cog"></i></span>
+            </div>
+          </header>
+        
+          <main class="message-chat">
+          </main>
+        
+          <div class="message-input-area">
+            <!-- <input type="text" class="message-input" placeholder="Enter your message..."> -->
+            <textarea class="message-input" id="auto-expanding-input" placeholder="Enter your message..." rows="1" cols="50" oninput="autoExpand(this)"></textarea>
+            <button id="message-send-button" type="button" class="message-send-button">Send</button>
+            <!-- <button id="bing-button" class="message-send-button">Bing</button> -->
+          </div>
       </section>
+    </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.2.1/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mongoose@7.4.3/dist/browser.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
