@@ -13,9 +13,11 @@ const clearChatHistoryButton = _get("#clear-button");
 const getProblemDescriptionButton = _get("#problem-input-button")
 const userIdButton = _get("#user-id-button")
 
+let isResizing = false;
 var responsed_code = "";
 var test_flag = 0
 var myCodeMirror
+var full_his = []
 
 // Path to the API key file
 const apiKeyURL = "API_KEY.txt";
@@ -104,6 +106,7 @@ async function getProblemDescription() {
       requestBingApi(promptForBing);
 
       loading_finished();
+      appendMessage(BOT_NAME, BOT_IMG, "left", "Great! I have your problem now.\nFeel free to start asking me questions about it.",'');
   }
 }
 
@@ -118,15 +121,16 @@ async function setUser() {
     studentData.user_id = id
     console.log("Retrieving studentData of student:" + studentData.user_id)
     const chatHis = retrieveChatHistory(id)
-    appendMessage(BOT_NAME, BOT_IMG, "left", "Hi, I'm your coding tutor. To start with, please provide your problem in the problem box and you can start your chat with me.",'');
+    appendMessage(BOT_NAME, BOT_IMG, "left", "Hi, I'm your coding tutor. To begin, please fill in your problem in the problem box, and feel free to start your chat with me.\n"
+    + "For example, you can fill in:\n*Description: Given an integer x, return true if x is a palindrome, and false otherwise.*",'');
     const userProb = retrieveUserProblem(id);
-    const bingReply = retrieveUserBingReply(id)
+    const bingReply = retrieveUserBingReply(id);
     const promises = [chatHis, userProb, bingReply];
     const response = await Promise.all(promises);
     studentData.history = response[0].data.data;
     studentData.problem = response[1].data.data;
-    console.log("userprob",studentData.problem)
     studentData.bing_reply = response[2].data.data;
+    full_his = [];
 
     reconstructChatHistory(studentData.history)
     
@@ -142,7 +146,12 @@ async function setUser() {
 function clearChatHistory() {
   messageChat.innerHTML = ''; // Clear the chat interface
   studentData.history = [];
+  studentData.problem = "";
+  studentData.bing_reply = "";
+  studentData.type = "default";
   UpdateChatHistoryToDB();
+
+  full_his = []
 }
 
 
@@ -171,37 +180,39 @@ async function getTutorResponse(msgText, from_modified) {
   if (questionType == "U") {
     //undesired output
     tutorInstruction = `*Instruction*
-  The goal is to provide a hint to help the student diagnose why their code is producing an undesired output with the input provided by the student. Below are the detailed steps you need to follow:
-  1. Ask the student about the intention of the code they provide if the student didn't say it in the question. e.g. "Can you explain how you think your code should work? "
-  2. You can ask the student to add \`print(...)\` in the code and specify the position and what to print. Or you can provide test cases which are different from those provided by the student, and then ask the student to run the code for you to help debug.
-  3. After those, pose thought-provoking questions, and list out any potential pitfalls or logical errors that might be causing the unexpected output.
-  4. The problem that can be fixed with less code or is easier to fix should be addressed first.`;
+    The goal is to provide a hint to help the student diagnose why their code is producing an undesired output with the input provided by the student. Below are the detailed steps you need to follow:
+    1. If you cannot understand the problem and the student didn't provide his expect output, please tell the sudent to provide his expect ouput.
+    2. Pose thought-provoking questions, and list the most potential pitfall or logical error that might cause the unexpected output.
+    3. The problem that can be fixed with less code or is easier to fix should be addressed first.`;
   } else if (questionType == "H") {
     //hint
     tutorInstruction = `*Instruction*
-  Provide hint for the student to solve their problem, and below are the rules you should follow:
-  1. Only provide ONE step that the student should do with easy-to-understand language and make your response short as possible.
-  2. Generate next step ONLY if the student can understand the first step.
-  3. Give a neat general idea if the student asked.
-  4. List out the keywords for coding knowledge that may be applied to the student's question or this coding problem.
-  5. Ask the student if they can understand or provide an easy coding test with "xxx" for student to fill at the end.`;
+    Provide hint for the student to solve their problem, and below are the rules you should follow:
+    1. Only provide ONE step that the student should do with easy-to-understand language and make your response short as possible.
+    2. Generate next step if the student can understand the current step, otherwise just give easy concept of current step.
+    3. Give a neat general idea if the student asked.
+    4. List out few keywords for coding knowledge that may be applied to the student's question or this coding problem.
+    5. Ask the student if they can understand or provide an easy coding test with "xxx" for student to fill at the end.`;
   } else if (questionType == "C") {
     //compile error
     tutorInstruction = `*Instruction*
-  The goal is to provide a hint to help the student diagnose why their code is having a compile error. Below are the detailed steps you need to follow:
-  1. Explain the error message provided by the compiler.
-  2. Review syntax, variable names, and data types, and if that's the reason causing the compile error, tell the student to check for it with questions.
-  3. Pose thought-provoking questions, and list out any potential pitfalls or logical errors that might be causing the compile error.`;
+    The goal is to provide a hint to help the student diagnose why their code is having a compile error. Below are the detailed steps you need to follow:
+    1. Explain the error message provided by the compiler.
+    2. Review syntax, variable names, and data types, and if that's the reason causing the compile error, tell the student to check for it with questions.
+    3. If the user asks about potential error causes, provide a list of critical pitfalls or logical errors that could be responsible for the compilation error.`;
   } else if (questionType == "N") {
     //no AC
     tutorInstruction = `*Instruction*
-  Provide a hint to help the student optimize their code and address issues causing it not to get accepted on the online judge. Below are the detailed steps you need to follow:
-  1. If there's a time limit exceeded (TLE), then assume the logic of the code is correct and provide hints to help the student optimize the efficiency of the code, and then skip the below steps.
-  2. If there's no TLE, then for each small part of the code provided by the student. Imagine different scenarios that might cause it to fail on the online judge. Consider the logic, edge cases, and potential bottlenecks in the algorithm.
-  3. Encourage the student to review the problem requirements and trace the code to ensure it meets those requirements.
-  4. You can ask the student to add \`print(...)\` in the code and specify the position and what to print. Or you can provide test cases which are different from those provided by the student, and then ask the student to run the code for you to help debug.`;
+    Provide a hint to help the student optimize their code and address issues causing it not to get accepted on the online judge. Below are the detailed steps you need to follow:
+    1. If there's a time limit exceeded (TLE), then assume the logic of the code is correct and provide hints to help the student optimize the efficiency of the code, and then skip the below steps.
+    2. If there's no TLE, then for each small part of the code provided by the student. Imagine different scenarios that might cause it to fail on the online judge. Consider the logic, edge cases, and potential bottlenecks in the algorithm.
+    3. Encourage the student to review the problem requirements and trace the code to ensure it meets those requirements.
+    4. You can ask the student to add \`print(...)\` in the code and specify the position and what to print. Or you can provide test cases which are different from those provided by the student, and then ask the student to run the code for you to help debug.`;
   } else {
     // Universal prompt (default)
+    tutorInstruction = `*Instruction*
+    Be a kind and patient computer science coding tutor~~~
+    `;
   }
 
   loading_finished()
@@ -214,8 +225,14 @@ async function getTutorResponse(msgText, from_modified) {
     const response = await requestChatGptApi(msgText, tutorInstruction);
     // var ai_time = tutorResponse(response);
 
-    addToHistory("user" ,msgText ,user_time);
-    addToHistory("assistant" ,response ,formatDate(new Date()));
+    if(from_modified === 0 || from_modified === 1){
+      addToHistory("user" ,msgText ,user_time);
+      addToHistory("assistant" ,response ,formatDate(new Date()));
+    } 
+    if(from_modified === 0 || from_modified === 1 || from_modified === 2){
+      addToFullHis("user" ,msgText ,user_time);
+      addToFullHis("assistant" ,response ,formatDate(new Date()));
+    }
 
     getSuggestion();
   } catch (error) {
@@ -239,30 +256,69 @@ async function requestChatGptApi(message, tutorInstruction = '') {
 
   let fullResponse = '';
 
-  const requestBody = {
-    model: 'gpt-3.5-turbo',
-    messages: [
-      {
-        role: 'system',
-        content: `*Role*
-        Behave as a coding tutor with the following qualities:
-        - Use structured content and bullet points to enhance clarity.
-        - please make your response short and NEAT.
-        - Don't give detailed step-by-step guides if they are not asked for.`
-      },
-      {
-        role: 'system',
-        content: "!!!DO NOT generate answer code or snippet code to STUDENT'S PROBLEM!!!"
-      },
-      { role: 'user', content: tutorInstruction },
-      { role: 'user', content: studentData.problem },
-      { role: 'user', content: studentData.bing_reply },
-      ...studentData.history.map(messageObj => ({ role: messageObj.role, content: messageObj.content })),
-      { role: 'user', content: 'user problem: '+ studentData.problem + '\n user input: ' + message + "!!!DO NOT generate answer code or snippet code to STUDENT'S PROBLEM!!!"}
-    ],
-    stream: true,
-    max_tokens: 300,
-  };
+  let requestBody = {};
+
+  if(test_flag === 1){
+    requestBody = {
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: `*Role*
+          Behave as a coding tutor with the following qualities:
+          - Use structured content and bullet points to enhance clarity.
+          - please make your response short and NEAT.
+          - Please provide steps to solve the current issue without giving the complete solution for each step.`
+        },
+        { role: 'user', content: studentData.problem },
+        { role: 'user', content: studentData.bing_reply },
+        ...full_his.map(messageObj => ({ role: messageObj.role, content: messageObj.content })),
+        {
+          role: 'system',
+          content: `*Role*
+          Behave as a coding tutor with the following qualities:
+          - Use structured content and bullet points to enhance clarity.
+          - please make your response short and NEAT.
+          - Please provide steps to solve the current issue without giving the complete solution for each step.`
+        },
+        { role: 'system', content: tutorInstruction },
+        {
+          role: 'system',
+          content: "!!!You can provide Python stub code, but DO NOT generate answer code to STUDENT'S PROBLEM!!!"
+        },
+        { role: 'user', content: 'users code: ' + myCodeMirror.getValue() },
+        { role: 'user', content: message }
+      ],
+      stream: true,
+      max_tokens: 300,
+    };
+  }
+  else{
+    requestBody = {
+      model: 'gpt-3.5-turbo',
+      messages: [
+        { role: 'user', content: studentData.problem },
+        { role: 'user', content: studentData.bing_reply },
+        ...full_his.map(messageObj => ({ role: messageObj.role, content: messageObj.content })),
+        {
+          role: 'system',
+          content: `*Role*
+          Behave as a coding tutor with the following qualities:
+          - Use structured content and bullet points to enhance clarity.
+          - please make your response short and NEAT.
+          - Please provide steps to solve the current issue without giving the complete solution for each step.`
+        },
+        { role: 'system', content: tutorInstruction },
+        {
+          role: 'system',
+          content: "!!!You can provide Python stub code, but DO NOT generate whole answer code to STUDENT'S PROBLEM!!!"
+        },
+        { role: 'user', content: message }
+      ],
+      stream: true,
+      max_tokens: 300,
+    };
+  }
 
   const requestOptions = {
     method: 'POST',
@@ -338,13 +394,13 @@ async function requestChatGptApi(message, tutorInstruction = '') {
 
       if (responsed_code !== "") {
         // Do something with the extracted code
-        console.log("Extracted code:", responsed_code);
+        // console.log("Extracted code:", responsed_code);
 
         // Create a button element
         const button = document.createElement("button");
         button.setAttribute("id", "test");
         button.setAttribute("class", "test_btn");
-        button.textContent = "Try It!"; // Set the button text
+        button.textContent = "Open code editor and try !"; // Set the button text
 
         button.onclick = function() {
 
@@ -352,7 +408,47 @@ async function requestChatGptApi(message, tutorInstruction = '') {
               const middleRow = document.querySelector(".middle-row");
               // Create the form element
               const form = document.createElement("form");
+              const submit = document.createElement("button");
+              submit.textContent = "Submit";
+              submit.className = "code-submit-button";
+              submit.addEventListener("click", function() {
+                const code = myCodeMirror.getValue();
+                const input = document.getElementById("coding-input-area").value; // Get the input from an input field with id "inputField"
+            
+                // Check if input is provided, and only include it in the JSON payload if it's not empty
+                const requestData = { code: code };
+                if (input.trim() !== "") {
+                  requestData.input = input.trim();
+                }
+            
+                fetch('http://localhost:5000/compilePython', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(requestData),
+                })
+                .then((response) => response.json())
+                .then((data) => {
+                  if(data.error){
+                    const outputElement = document.getElementById("output");
+                    outputElement.textContent =  data.error;
+                    getTutorResponse(code+"\n\nI got an error:\n"+data.error,2);
+                  }
+                  else{
+                    const outputElement = document.getElementById("output");
+                    outputElement.textContent =  data.result;
+                    appendMessage(BOT_NAME, BOT_IMG, "left", "Great! It seems like there is no error in your code, is the output correct?", formatDate(new Date()));
+                    addToFullHis('assistant',"Great! It seems like there is no error in your code, is the output correct?",formatDate(new Date()));
+                  }
+                  console.log(data.error);
+                })
+                .catch((error) => {
+                  console.error('Error:', error);
+                });
+              });
               form.setAttribute("action", "");
+              form.className = "coding-form";
 
               // Create the textarea element
               const textarea = document.createElement("textarea");
@@ -363,7 +459,24 @@ async function requestChatGptApi(message, tutorInstruction = '') {
               form.appendChild(textarea);
 
               // Append the form to the middle-row div
-              middleRow.appendChild(form);
+              const middleRow_div = document.createElement("div");
+              middleRow_div.className = "middle-row-container";
+              middleRow_div.appendChild(form);
+              
+              // add an input area
+              const divElement = document.createElement("div");
+              divElement.className = "flex-container";
+              const inputElement = document.createElement("input");
+              inputElement.type = "text";
+              inputElement.id = "coding-input-area";
+              inputElement.className = "coding-input-area";
+              inputElement.classList.add("message-input-area");
+              inputElement.placeholder = "Enter your input(optional)...";
+              divElement.appendChild(inputElement);
+              divElement.appendChild(submit);
+              middleRow_div.appendChild(divElement);
+
+              middleRow.appendChild(middleRow_div);
 
               var el = document.getElementById("editor");
               var codeStart = "# version: Python3\n\n# code start\n\n";
@@ -396,8 +509,9 @@ async function requestChatGptApi(message, tutorInstruction = '') {
               const bottomRow = document.querySelector(".bottom-row");
               const outputContainer = document.createElement("div");
               outputContainer.id = "output-container";
+              outputContainer.className = "output-container";
               const heading = document.createElement("h2");
-              heading.textContent = "Output:";
+              heading.textContent = "Output :";
 
               // Create a <pre> element for displaying the output
               const outputElement = document.createElement("pre");
@@ -413,46 +527,63 @@ async function requestChatGptApi(message, tutorInstruction = '') {
             else{
               const middleRow = document.querySelector(".middle-row");
               // Get a reference to the child form element
+              const middleRow_div = middleRow.querySelector("div");
               const form = middleRow.querySelector("form");
+              const ip = middleRow.querySelector("input");
+              const submit = middleRow.querySelector("button");
 
               // Remove the form element from the middle-row
-              middleRow.removeChild(form);
+              // middleRow.removeChild(form);
+              // middleRow.removeChild(ip);
+              // middleRow.removeChild(submit);
+              middleRow.removeChild(middleRow_div);
 
               const bottomRow = document.querySelector(".bottom-row");
               const outputContainer = bottomRow.querySelector("div");
               bottomRow.removeChild(outputContainer)
-
+              
+              // middleRow.removeChild();
               test_flag = 0
             }
         };
-
         
-        document.addEventListener("keydown", function(event) {
-          if (event.shiftKey && event.key === "Enter" && test_flag) {
-              fetch('http://localhost:5000/compilePython', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ code: myCodeMirror.getValue() }),
-            })
-              .then((response) => response.json())
-              .then((data) => {
-                if(data.error){
-                  const outputElement = document.getElementById("output");
-                  outputElement.textContent =  data.error;
-                }
-                else{
-                  const outputElement = document.getElementById("output");
-                  outputElement.textContent =  data.result;
-                }
-                console.log(data.error);
-              })
-              .catch((error) => {
-                console.error('Error:', error);
-              });
-          }
-        });
+        
+        // document.addEventListener("keydown", function(event) {
+        //   if (event.shiftKey && event.key === "Enter" && test_flag) {
+        //     const code = myCodeMirror.getValue();
+        //     const input = document.getElementById("coding-input-area").value; // Get the input from an input field with id "inputField"
+        
+        //     // Check if input is provided, and only include it in the JSON payload if it's not empty
+        //     const requestData = { code: code };
+        //     if (input.trim() !== "") {
+        //       requestData.input = input.trim();
+        //     }
+        
+        //     fetch('http://localhost:5000/compilePython', {
+        //       method: 'POST',
+        //       headers: {
+        //         'Content-Type': 'application/json',
+        //       },
+        //       body: JSON.stringify(requestData),
+        //     })
+        //     .then((response) => response.json())
+        //     .then((data) => {
+        //       if(data.error){
+        //         const outputElement = document.getElementById("output");
+        //         outputElement.textContent =  data.error;
+        //       }
+        //       else{
+        //         const outputElement = document.getElementById("output");
+        //         outputElement.textContent =  data.result;
+        //       }
+        //       console.log(data.error);
+        //     })
+        //     .catch((error) => {
+        //       console.error('Error:', error);
+        //     });
+        //   }
+        // });
+        
       // Insert the button after the 'pre' element
       pre.insertAdjacentElement("afterend", button);
       } else {
@@ -495,10 +626,11 @@ async function getQuestionType(message){
     - Hint (Give student good guidance that is thought-provoking, and provide related concepts)
     - Compile error (Help student find bugs in the code and needed knowledge related to the error message)
     - Not getting AC (Help student find the underlying problem that might lead to not passing all the test cases on the online judge system)
-    If the user's question is too short or hard to classify, just reply "default"
+    If the user's question is too short or hard to classify, just reply "D" for default.
     !!!Only contain the first character of the name of that type in your response!!!
     e.g. Question: Why is the code having a compile error? You: C (since it's a compile error)
-    Question: Only 9 of 17 test cases are accepted, why? You: N (since it's not getting AC)
+    e.g. Question: Only 9 of 17 test cases are accepted, why? You: N (since it's not getting AC)
+    e.g. Question: why I got all threes instead of "1,2,3"? You: U (since it's Undesired output)
     ----
     *Question*`;
 
@@ -674,6 +806,8 @@ function modifyMessage(messageElement) {
       // Update studentData.history with the new array
       studentData.history = updatedHistory;
       messageChat.scrollTop = messageChat.scrollHeight;
+
+      full_his = JSON.parse(JSON.stringify(studentData.history));
       getTutorResponse(newText,1)
     }
   }
@@ -685,9 +819,12 @@ function modifyMessage(messageElement) {
 function addToHistory(role, content,time) {
     studentData.history.push({ role: role, content: content,time:time });
 }
+
+function addToFullHis(role, content,time) {
+    full_his.push({ role: role, content: content,time:time });
+}
 function addToHistory_front(role, content,time) {
    studentData.history.unshift({ role: role, content: content, time: time });
-
 }
 
 
@@ -874,14 +1011,12 @@ function reconstructChatHistory(chatHistory) {
         }
         addToHistory(role, content, time);
       }
+      full_his = JSON.parse(JSON.stringify(studentData.history));
     }
   } catch (error) {
     console.error('Error reconstructing chat history:', error);
   }
 }
-
-
-
 
 /**
  * Post a json file to the server 
@@ -889,7 +1024,7 @@ function reconstructChatHistory(chatHistory) {
  * @param jsonData 
  */
 function postRequest(jsonData) {
-  console.log("POST:", JSON.parse(jsonData));
+  // console.log("POST:", JSON.parse(jsonData));
   const payload = {
     user_id: JSON.parse(jsonData).user_id,
     type: JSON.parse(jsonData).type,
@@ -927,30 +1062,37 @@ clearChatHistoryButton.addEventListener("click", clearChatHistory);
 
 messageSendButton.addEventListener("click", (event) => {
   event.preventDefault();
-  if(messageInput.value!=""){
+  if(messageInput.value!==""){
     messageChat.scrollTop = messageChat.scrollHeight;
+    removeSuggestCont();
     getTutorResponse(messageInput.value,0);
   
-    if(test_flag == 1){
-      const middleRow = document.querySelector(".middle-row");
-      // Get a reference to the child form element
-      const form = middleRow.querySelector("form");
+    // if(test_flag == 1){
+    //   const middleRow = document.querySelector(".middle-row");
+    //   // Get a reference to the child form element
+    //   const middleRow_div = middleRow.querySelector("div");
+    //   const form = middleRow.querySelector("form");
+    //   const ip = middleRow.querySelector("input");
+    //   const submit = middleRow.querySelector("button");
   
-      // Remove the form element from the middle-row
-      middleRow.removeChild(form);
+    //   // Remove the form element from the middle-row
+    //   // middleRow.removeChild(form);
+    //   // middleRow.removeChild(ip);
+    //   // middleRow.removeChild(submit);
+    //   middleRow.removeChild(middleRow_div);
   
-      const bottomRow = document.querySelector(".bottom-row");
-      const outputContainer = bottomRow.querySelector("div");
-      bottomRow.removeChild(outputContainer)
+    //   const bottomRow = document.querySelector(".bottom-row");
+    //   const outputContainer = bottomRow.querySelector("div");
+    //   bottomRow.removeChild(outputContainer)
   
-      test_flag = 0
-    }
+    //   test_flag = 0
+    // }
   }
   });
 
 
 messageInput.addEventListener("keydown", function(event) {
-  if (event.key === "Enter") {
+  if (event.key === "Enter" && !event.shiftKey) {
     event.preventDefault()
     messageSendButton.click();
   }
@@ -966,250 +1108,6 @@ messageChat.addEventListener("click", (event) => {
   if (event.target.classList.contains('edit-btn')) {
     const messageElement = event.target.closest('.message'); // Find the parent message container
     modifyMessage(messageElement);
-  }
-});
-
-
-
-
-// // 獲取按鈕元素
-// const openButton = document.getElementById('openButton');
-
-// // 點擊按鈕後執行的函數
-// openButton.addEventListener('click', () => {
-//   // 打開一個新的視窗（或對話框）
-//   const popupWindow = window.open('', 'popupWindow', 'width=400,height=400');
-
-//   const htmlContent = `
-//   <!DOCTYPE html>
-//   <html lang="en">
-//   <head>
-//       <meta charset="UTF-8">
-//       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-//       <meta http-equiv="X-UA-Compatible" content="ie=edge">
-//       <title>Document</title>
-//       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/codemirror.css">
-//       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/fold/foldgutter.css">
-//       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/hint/show-hint.css">
-//       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/lint/lint.css">
-//   </head>
-//   <body>
-//       <form action="">
-//           <textarea id="editor" class="editor"></textarea>
-//       </form>   
-//       <button id="test">click</button>
-//   </body>
-//   </html>
-//   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/codemirror.js" async></script>
-//   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/comment/comment.js" async></script>
-//   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/selection/active-line.js" async></script>
-//   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/keymap/sublime.js" async></script>
-//   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/hint/show-hint.js" async></script>
-//   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/mode/python/python.js" async></script> 
-//   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/fold/foldcode.js" async></script>
-//   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/fold/foldgutter.js" async></script>
-//   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/fold/brace-fold.js" async></script>
-//   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/fold/indent-fold.js" async></script>
-//   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/fold/comment-fold.js" async></script>
-//   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/edit/closebrackets.js" async></script>
-//   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/edit/matchbrackets.js" async></script>
-//   <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.24.0/axios.js" async></script>
-//   <script>
-//       window.onload = function () {
-//         var el = document.getElementById("editor");
-//         // var version = "# version: Python3\n\n";
-//         // var codeAreaTip = "# please edit your code here:\n";
-//         var codeStart = "# code start\n\n";
-//         // var codeEnd = "# code end\n\n";
-//         // var codeTip = "'''\nThis function is the entry of this program and\nit must be return your answer of current question.\n'''\n";
-//         // var code = "def solution():\n\tpass";
-//         // var initValue = version + codeAreaTip + codeStart + codeEnd + codeTip + code;
-//         var initValue = codeStart ;
-//         var myCodeMirror = CodeMirror.fromTextArea(el, {
-//             mode: "python", // 语言模式
-//             theme: "leetcode", // 主题
-//             keyMap: "sublime", // 快键键风格
-//             lineNumbers: true, // 显示行号
-//             smartIndent: true, // 智能缩进
-//             indentUnit: 4, // 智能缩进单位为4个空格长度
-//             indentWithTabs: true, // 使用制表符进行智能缩进
-//             lineWrapping: true, // 
-//             // 在行槽中添加行号显示器、折叠器、语法检测器
-//             gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter", "CodeMirror-lint-markers"], 
-//             foldGutter: true, // 启用行槽中的代码折叠
-//             autofocus: true, // 自动聚焦
-//             matchBrackets: true, // 匹配结束符号，比如"]、}"
-//             autoCloseBrackets: true, // 自动闭合符号
-//             styleActiveLine: true, // 显示选中行的样式
-//         });
-//         // 设置初始文本,这个选项也可以在fromTextArea中配置
-//         myCodeMirror.setOption("value", initValue);
-//         // 编辑器按键监听
-//         myCodeMirror.on("keypress", function() {
-//             // 显示智能提示
-//             // myCodeMirror.showHint(); 
-//         });
-//         var test = document.getElementById("test");
-//         test.onclick = function() {
-//             const pythonCode = 'print("Hello, World!")';  // 你的Python代码
-            
-//             fetch('http://localhost:3000/compilePython', {
-//               method: 'POST',
-//               headers: {
-//                 'Content-Type': 'application/json',
-//               },
-//               body: JSON.stringify({ code: myCodeMirror.getValue() }),
-//             })
-//               .then((response) => response.json())
-//               .then((data) => {
-//                 console.log(data.result);  // 服务器返回的执行结果
-//               })
-//               .catch((error) => {
-//                 console.error('Error:', error);
-//               });
-
-
-//             // var value = myCodeMirror.getValue();
-//             // axios.post("http://localhost/api/runcode", {
-//             //     code: value
-//             // }).then(function(res) {
-//             //     console.log(res);
-//             // });
-//         };
-//      };
-
-//   </script>
-//   `;
-
-//   // 在新的窗口中写入 HTML 内容
-//   popupWindow.document.write(htmlContent);
-  
-
-//   // 當在彈出視窗上點擊關閉按鈕時執行的函數
-//   popupWindow.document.getElementById('closeButton').addEventListener('click', () => {
-//     // 在這裡可以進行一些操作並返回結果，例如：
-//     const result = '這是從視窗返回的結果';
-    
-//     // 關閉視窗
-//     popupWindow.close();
-
-//     // 在原始畫面中處理返回的結果
-//     alert(`收到來自視窗的結果：${result}`);
-
-//   });
-//   // // 在視窗關閉前的事件處理程序
-//   // popupWindow.addEventListener('beforeunload', (event) => {
-//   //   const result = '這是從視窗返回的結';
-
-//   //   // 在按下視窗的 X 按鈕時執行操作
-//   //   // ...
-
-//   //   // 將結果作為提示訊息返回
-//   //   event.returnValue = `確定要關閉視窗嗎？(結果：${result})`;
-
-//   //   alert(`收到來自視窗的結果：${result}`);
-
-//   // });
-// });
-
-
-
-
-
-
-
-
-
-
-
-// var test_flag = 0
-// var myCodeMirror
-// const test_btn = document.getElementById("test");
-// test_btn.onclick = function() {
-
-//     const pythonCode = 'print("Hello, World!")';  // 你的Python代码
-
-//     if(!test_flag){
-//       const middleRow = document.querySelector(".middle-row");
-//       // Create the form element
-//       const form = document.createElement("form");
-//       form.setAttribute("action", "");
-
-//       // Create the textarea element
-//       const textarea = document.createElement("textarea");
-//       textarea.setAttribute("id", "editor");
-//       textarea.setAttribute("class", "editor");
-
-//       // Append the textarea and button to the form
-//       form.appendChild(textarea);
-
-//       // Append the form to the middle-row div
-//       middleRow.appendChild(form);
-
-//       var el = document.getElementById("editor");
-//       var codeStart = "# version: Python3\n\n# code start\n\n";
-//       var initValue = codeStart + responsed_code ;
-//       myCodeMirror = CodeMirror.fromTextArea(el, {
-//           mode: "python", // 语言模式
-//           theme: "leetcode", // 主题
-//           keyMap: "sublime", // 快键键风格
-//           lineNumbers: true, // 显示行号
-//           smartIndent: true, // 智能缩进
-//           indentUnit: 4, // 智能缩进单位为4个空格长度
-//           indentWithTabs: true, // 使用制表符进行智能缩进
-//           lineWrapping: true, // 
-//           // 在行槽中添加行号显示器、折叠器、语法检测器
-//           gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter", "CodeMirror-lint-markers"], 
-//           foldGutter: true, // 启用行槽中的代码折叠
-//           autofocus: true, // 自动聚焦
-//           matchBrackets: true, // 匹配结束符号，比如"]、}"
-//           autoCloseBrackets: true, // 自动闭合符号
-//           styleActiveLine: true, // 显示选中行的样式
-//       });
-//       // 设置初始文本，这个选项也可以在fromTextArea中配置
-//       myCodeMirror.setOption("value", initValue);
-//       // 编辑器按键监听
-//       myCodeMirror.on("keypress", function() {
-//           // 显示智能提示
-//           // myCodeMirror.showHint();
-//       });
-//       test_flag = 1
-//     }
-
-//     else{
-//       const middleRow = document.querySelector(".middle-row");
-//       // Get a reference to the child form element
-//       const form = middleRow.querySelector("form");
-
-//       // Remove the form element from the middle-row
-//       middleRow.removeChild(form);
-
-//       test_flag = 0
-//     }
-// };
-
-
-
-
-
-
-
-document.addEventListener("keydown", function(event) {
-  if (event.shiftKey && event.key === "Enter" && test_flag) {
-      fetch('http://localhost:5000/compilePython', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ code: myCodeMirror.getValue() }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log(data.result);  // 服务器返回的执行结果
-      })
-      .catch((error) => {
-        console.error('Error:', error);
-      });
   }
 });
 
@@ -1267,7 +1165,7 @@ async function getSuggestion() {
     const fullResponse = await response.json();
     // console.log(fullResponse)
     let originalRes = fullResponse.choices[0].message.content;
-    console.log(originalRes)
+    // console.log(originalRes)
     resObj = JSON.parse(originalRes);
     
   } catch (error) {
@@ -1318,6 +1216,12 @@ function createSuggestionContainer() {
 
 function sendSuggestionQ(e){
   messageInput.value = e.target.value;
+  removeSuggestCont();
+  getTutorResponse(messageInput.value, 3);
+
+}
+
+function removeSuggestCont(){
   let suggestionCont = document.getElementById("suggestion-container");
   let items_ = document.getElementsByClassName("suggestion-btn");
   if(suggestionCont){
@@ -1341,6 +1245,7 @@ function sendSuggestionQ(e){
   } else{
     console.error("Suggestion Box not found!");
   }
-  getTutorResponse(messageInput.value, 0);
-
 }
+
+
+

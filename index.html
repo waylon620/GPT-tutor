@@ -12,49 +12,52 @@
 </head>
 <body>
     <div id="loader" class="center"></div>
-    <div class="left-container">
-      <div class="top-row">
-        <!-- Content for the top row -->
-      </div>
-      <div class="middle-row">
-        <!-- <form action="">
-          <textarea id="editor" class="editor"></textarea>
-        </form> -->
-      </div>
-      <div class="bottom-row">
-        <!-- <button id="test" class="test_btn">click</button> -->
-      </div>
-    </div>
-    <section class="message-container">
-        <header class="message-header">
-          <div class="message-header-title">
-            <i class="fas fa-comment-alt"></i> GPT-Tutor
-            <!-- <select id="problem-type">
-                <option value="default">Select Problem Type</option>
-                <option value="type1">Coding Error</option>
-                <option value="type2">Problem Solving Tips</option>
-                <option value="type3">How to Get AC</option>
-            </select> -->
-          </div>
-          <div class="message-header-buttons">
-            <button id="problem-input-button">Problem</button>
-            <button id="user-id-button">User</button>
-            <button id="clear-button" class="clear-button">Clear</button>
-          </div>
-          <div class="message-header-options">
-            <span><i class="fas fa-cog"></i></span>
-          </div>
-        </header>
-      
-        <main class="message-chat">
-        </main>
-      
-        <div class="message-input-area">
-          <input type="text" class="message-input" placeholder="Enter your message...">
-          <button id="message-send-button" type="button" class="message-send-button">Send</button>
-          <!-- <button id="bing-button" class="message-send-button">Bing</button> -->
+    <!-- <div style="display: flex; justify-content: center";> -->
+      <div class="left-container">
+        <div class="top-row">
+          <!-- Content for the top row -->
         </div>
+        <div class="middle-row">
+          <!-- <form action="">
+            <textarea id="editor" class="editor"></textarea>
+          </form> -->
+        </div>
+        <div class="bottom-row">
+          <!-- <button id="test" class="test_btn">click</button> -->
+        </div>
+      </div>
+      <section class="message-container">
+          <header class="message-header">
+            <div class="message-header-title">
+              <i class="fas fa-comment-alt"></i> GPT-Tutor
+              <!-- <select id="problem-type">
+                  <option value="default">Select Problem Type</option>
+                  <option value="type1">Coding Error</option>
+                  <option value="type2">Problem Solving Tips</option>
+                  <option value="type3">How to Get AC</option>
+              </select> -->
+            </div>
+            <div class="message-header-buttons">
+              <button id="problem-input-button">Problem</button>
+              <button id="user-id-button">User</button>
+              <button id="clear-button" class="clear-button">Clear</button>
+            </div>
+            <div class="message-header-options">
+              <span><i class="fas fa-cog"></i></span>
+            </div>
+          </header>
+        
+          <main class="message-chat">
+          </main>
+        
+          <div class="message-input-area">
+            <!-- <input type="text" class="message-input" placeholder="Enter your message..."> -->
+            <textarea class="message-input" id="auto-expanding-input" placeholder="Enter your message..." rows="1" cols="50" oninput="autoExpand(this)"></textarea>
+            <button id="message-send-button" type="button" class="message-send-button">Send</button>
+            <!-- <button id="bing-button" class="message-send-button">Bing</button> -->
+          </div>
       </section>
+    </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.2.1/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mongoose@7.4.3/dist/browser.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -75,46 +78,15 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/edit/closebrackets.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/addon/edit/matchbrackets.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.24.0/axios.js"></script>
-    <script>
-      window.onload = function () {
-        var el = document.getElementById("editor");
-        // var version = "# version: Python3\n\n";
-        // var codeAreaTip = "# please edit your code here:\n";
-        var codeStart = "# code start\n\n";
-        // var codeEnd = "# code end\n\n";
-        // var codeTip = "'''\nThis function is the entry of this program and\nit must be return your answer of current question.\n'''\n";
-        // var code = "def solution():\n\tpass";
-        // var initValue = version + codeAreaTip + codeStart + codeEnd + codeTip + code;
-        var initValue = codeStart ;
-        var myCodeMirror = CodeMirror.fromTextArea(el, {
-            mode: "python", // 语言模式
-            theme: "leetcode", // 主题
-            keyMap: "sublime", // 快键键风格
-            lineNumbers: true, // 显示行号
-            smartIndent: true, // 智能缩进
-            indentUnit: 4, // 智能缩进单位为4个空格长度
-            indentWithTabs: true, // 使用制表符进行智能缩进
-            lineWrapping: true, // 
-            // 在行槽中添加行号显示器、折叠器、语法检测器
-            gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter", "CodeMirror-lint-markers"], 
-            foldGutter: true, // 启用行槽中的代码折叠
-            autofocus: true, // 自动聚焦
-            matchBrackets: true, // 匹配结束符号，比如"]、}"
-            autoCloseBrackets: true, // 自动闭合符号
-            styleActiveLine: true, // 显示选中行的样式
-        });
-        // 设置初始文本，这个选项也可以在fromTextArea中配置
-        myCodeMirror.setOption("value", initValue);
-        // 编辑器按键监听
-        myCodeMirror.on("keypress", function() {
-            // 显示智能提示
-            // myCodeMirror.showHint(); // 注意，注释了CodeMirror库中show-hint.js第131行的代码（阻止了代码补全，同时提供智能提示）
-        });
-
-    };
-    </script>
 
     <script type="module" src="./script.js"></script>
+
+    <script>
+      function autoExpand(textarea) {
+        textarea.style.height = "auto";
+        textarea.style.height = textarea.scrollHeight + "px";
+      }
+    </script>
 
 </body>
 </html>
