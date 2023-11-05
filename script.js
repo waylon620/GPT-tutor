@@ -3,6 +3,7 @@
 ///////////////////////////
 
 import {franc, francAll} from 'https://esm.sh/franc@6'
+import { get_request_or_question } from './script2.js';
 
 // Dom elements
 const messageForm = _get(".message-input-area");
@@ -11,7 +12,7 @@ const messageChat = _get(".message-chat");
 const messageSendButton = _get("#message-send-button");
 const clearChatHistoryButton = _get("#clear-button");
 const getProblemDescriptionButton = _get("#problem-input-button")
-const userIdButton = _get("#user-id-button")
+const userIdButton = _get("#user-id-button");
 
 let isResizing = false;
 var responsed_code = "";
@@ -210,9 +211,27 @@ async function getTutorResponse(msgText, from_modified) {
     4. You can ask the student to add \`print(...)\` in the code and specify the position and what to print. Or you can provide test cases which are different from those provided by the student, and then ask the student to run the code for you to help debug.`;
   } else {
     // Universal prompt (default)
-    tutorInstruction = `*Instruction*
-    Be a kind and patient computer science coding tutor~~~
-    `;
+    const [is_qustion, is_request] = await get_request_or_question(msgText)
+    if(is_qustion){
+      console.log("is question == 1")
+      tutorInstruction = `*Instruction*
+      The user may still be confused about their problem , please provide assistance gradually.
+      Be a kind and patient computer science coding tutor~~~
+      `;
+    }
+    else if(is_request){
+      console.log("is request == 1")
+      tutorInstruction = `*Instruction*
+      The user may want you to provide examples or code. Please be cautious when providing code , you provide only the code stub rather than the entire code.
+      Be a kind and patient computer science coding tutor~~~
+      `;
+    }
+    else{
+      tutorInstruction = `*Instruction*
+      Be a kind and patient computer science coding tutor~~~
+      `;
+    }
+
   }
 
   loading_finished()
@@ -266,6 +285,7 @@ async function requestChatGptApi(message, tutorInstruction = '') {
           role: 'system',
           content: `*Role*
           Behave as a coding tutor with the following qualities:
+          - Try to separate the question into parts and unsderstand step by step.
           - Use structured content and bullet points to enhance clarity.
           - please make your response short and NEAT.
           - Please provide steps to solve the current issue without giving the complete solution for each step.`
@@ -277,6 +297,7 @@ async function requestChatGptApi(message, tutorInstruction = '') {
           role: 'system',
           content: `*Role*
           Behave as a coding tutor with the following qualities:
+          - Try to separate the question into parts and unsderstand step by step.
           - Use structured content and bullet points to enhance clarity.
           - please make your response short and NEAT.
           - Please provide steps to solve the current issue without giving the complete solution for each step.`
@@ -304,6 +325,7 @@ async function requestChatGptApi(message, tutorInstruction = '') {
           role: 'system',
           content: `*Role*
           Behave as a coding tutor with the following qualities:
+          - Try to separate the question into parts and unsderstand step by step.
           - Use structured content and bullet points to enhance clarity.
           - please make your response short and NEAT.
           - Please provide steps to solve the current issue without giving the complete solution for each step.`
@@ -503,7 +525,7 @@ async function requestChatGptApi(message, tutorInstruction = '') {
               // 编辑器按键监听
               myCodeMirror.on("keypress", function() {
                   // 显示智能提示
-                  // myCodeMirror.showHint();
+                  myCodeMirror.showHint();
               });
 
               const bottomRow = document.querySelector(".bottom-row");
@@ -631,6 +653,9 @@ async function getQuestionType(message){
     e.g. Question: Why is the code having a compile error? You: C (since it's a compile error)
     e.g. Question: Only 9 of 17 test cases are accepted, why? You: N (since it's not getting AC)
     e.g. Question: why I got all threes instead of "1,2,3"? You: U (since it's Undesired output)
+    e.g. Question: How to finish the recursion of Hanoi? You: H (since it's Hint)
+    e.g. Question: Could you please confirm if the condition within the 'for' loop in my code is correct? You: H (since it's Hint)
+    e.g. Question: Thanks! You: D (since it's no obvious type)
     ----
     *Question*`;
 
@@ -884,13 +909,6 @@ function loading_finished(){
   messageInput.removeAttribute("disabled");
   messageSendButton.removeAttribute("disabled");
   console.log("loading end");
-}
-
-function distinguish_lan(input){
-  const languageCode = franc(input);
-  console.log('lan: ' , languageCode); 
-  if(languageCode=='cmn') return 1;
-  return 0;
 }
 
 /** 
