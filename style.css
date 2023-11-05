@@ -440,6 +440,7 @@ pre {
 }
 
 #auto-expanding-input {
+  resize: vertical;
   min-height: 30px; /* Adjust as needed */
   max-height: 110px; /* Adjust as needed */
 }
