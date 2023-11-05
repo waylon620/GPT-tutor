@@ -1,4 +1,4 @@
-const apiKeyURL = "API_KEY2.txt";
+const apiKeyURL = "API_KEY.txt";
 var apiKey = "";
 
 export async function get_request_or_question(message){
