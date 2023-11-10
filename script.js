@@ -279,16 +279,17 @@ async function requestChatGptApi(message, tutorInstruction = '') {
 
   if(test_flag === 1){
     requestBody = {
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4-1106-preview',
       messages: [
         {
           role: 'system',
           content: `*Role*
           Behave as a coding tutor with the following qualities:
-          - Try to separate the question into parts and unsderstand step by step.
+          - Please refrain from providing excessive information to students. Just provide the information needed for the next step.
+          - Try to separate the question into parts and understand step by step.
           - Use structured content and bullet points to enhance clarity.
           - please make your response short and NEAT.
-          - Please provide steps to solve the current issue without giving the complete solution for each step.`
+          - Please provide the first step ONLY to solve the current issue without giving the complete solution for each step.`
         },
         { role: 'user', content: studentData.problem },
         { role: 'user', content: studentData.bing_reply },
@@ -297,15 +298,16 @@ async function requestChatGptApi(message, tutorInstruction = '') {
           role: 'system',
           content: `*Role*
           Behave as a coding tutor with the following qualities:
-          - Try to separate the question into parts and unsderstand step by step.
+          - Please refrain from providing excessive information to students. Just provide the information needed for the next step.
+          - Try to separate the question into parts and understand step by step.
           - Use structured content and bullet points to enhance clarity.
           - please make your response short and NEAT.
-          - Please provide steps to solve the current issue without giving the complete solution for each step.`
+          - Please provide the first step ONLY to solve the current issue without giving the complete solution for each step.`
         },
         { role: 'system', content: tutorInstruction },
         {
           role: 'system',
-          content: "!!!You can provide Python stub code, but DO NOT generate answer code to STUDENT'S PROBLEM!!!"
+          content: "!!!You can provide Python stub code, but DO NOT generate answer code to STUDENT'S PROBLEM!!!" + "\n You should answer WITHIN 100 words. "
         },
         { role: 'user', content: 'users code: ' + myCodeMirror.getValue() },
         { role: 'user', content: message }
@@ -316,7 +318,7 @@ async function requestChatGptApi(message, tutorInstruction = '') {
   }
   else{
     requestBody = {
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4-1106-preview',
       messages: [
         { role: 'user', content: studentData.problem },
         { role: 'user', content: studentData.bing_reply },
@@ -325,15 +327,16 @@ async function requestChatGptApi(message, tutorInstruction = '') {
           role: 'system',
           content: `*Role*
           Behave as a coding tutor with the following qualities:
-          - Try to separate the question into parts and unsderstand step by step.
+          - Please refrain from providing excessive information to students. Just provide the information needed for the next step.
+          - Try to separate the question into parts and understand step by step.
           - Use structured content and bullet points to enhance clarity.
           - please make your response short and NEAT.
-          - Please provide steps to solve the current issue without giving the complete solution for each step.`
+          - Please provide the first step ONLY to solve the current issue without giving the complete solution for each step.`
         },
         { role: 'system', content: tutorInstruction },
         {
           role: 'system',
-          content: "!!!You can provide Python stub code, but DO NOT generate whole answer code to STUDENT'S PROBLEM!!!"
+          content: "!!!You can provide Python stub code, but DO NOT generate whole answer code to STUDENT'S PROBLEM!!!" + "\n You should answer WITHIN 100 words. "
         },
         { role: 'user', content: message }
       ],
@@ -661,7 +664,7 @@ async function getQuestionType(message){
 
     var responseMessage = "";
     const requestBody = {
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4-1106-preview',
         messages: [
           { role: 'system', content: "Reply a single charactor" }
         , { role: 'user', content: typePrompt + message }
@@ -1139,7 +1142,7 @@ async function getSuggestion() {
   // let fullResponse = '';
 
   const requestBody = {
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4-1106-preview',
     messages: [
       // {
       //   role: 'system',
